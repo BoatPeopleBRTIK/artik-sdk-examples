@@ -19,7 +19,7 @@
 #define URI_MAX_LEN		32
 #define DATA_MAX_LEN	1024
 #define MAX_PACKET_SIZE 1024
-#define DTLS_PORT_STR     LWM2M_DTLS_PORT_STR
+#define DTLS_PORT_STR   "5684"
 
 artik_loop_module *loop;
 artik_lwm2m_module *lwm2m;
@@ -30,7 +30,7 @@ static void prv_update_client(char *buffer, void *user_data)
 {
 	artik_lwm2m_handle handle = (artik_lwm2m_handle) user_data;
 	artik_error result;
-	uint16_t server_id = -1;
+	unsigned short server_id = -1;
 	command cmd;
 
 	prv_init_command(&cmd, buffer);
@@ -41,15 +41,14 @@ static void prv_update_client(char *buffer, void *user_data)
 
 	result = lwm2m->client_update(handle, server_id);
 	if (result == S_OK)
-		fprintf(stdout, "OK");
+		err("client update failed (%s)", error_msg(result));
 	else
-		prv_print_error(result);
+		fprintf(stdout, "OK");
 
 	return;
 
 syntax_error:
 	fprintf(stdout, "Syntax error !");
-
 }
 
 static void prv_change_obj(char *buffer, void *user_data)
@@ -71,12 +70,12 @@ static void prv_change_obj(char *buffer, void *user_data)
 	if (result != S_OK)
 		goto syntax_error;
 
-	result = lwm2m->client_change_object(handle, uri, (uint8_t *)data,
+	result = lwm2m->client_change_object(handle, uri, (unsigned char *)data,
 			strlen(data));
 	if (result == S_OK)
-		fprintf(stdout, "OK");
+		err("client change object failed (%s)", error_msg(result));
 	else
-		prv_print_error(result);
+		fprintf(stdout, "OK");
 
 	return;
 

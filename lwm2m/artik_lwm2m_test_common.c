@@ -80,7 +80,7 @@ int prv_next_space(command *cmd)
 	return result;
 }
 
-int prv_read_id(command *cmd, uint16_t *id)
+int prv_read_id(command *cmd, unsigned short *id)
 {
 	char *str;
 	int value;
@@ -148,14 +148,6 @@ int prv_read_data(command *cmd, char *data)
 		return S_OK;
 	}
 }
-
-void prv_print_error(uint8_t status)
-{
-	err("Error: ");
-	print_status(stdout, status);
-	err("\r\n");
-}
-
 
 static struct command_desc_t *prv_find_command(
 		struct command_desc_t *commandArray, char *buffer, size_t length)
@@ -241,7 +233,7 @@ static void print_indent(FILE *stream, int num)
 		fprintf(stream, "    ");
 }
 
-void output_buffer(FILE *stream, uint8_t *buffer, int length, int indent)
+void output_buffer(FILE *stream, unsigned char *buffer, int length, int indent)
 {
 	int i;
 
@@ -250,7 +242,7 @@ void output_buffer(FILE *stream, uint8_t *buffer, int length, int indent)
 
 	i = 0;
 	while (i < length) {
-		uint8_t array[16];
+		unsigned char array[16];
 		int j;
 
 		print_indent(stream, indent);
@@ -278,169 +270,4 @@ void output_buffer(FILE *stream, uint8_t *buffer, int length, int indent)
 		fprintf(stream, "\n");
 		i += 16;
 	}
-}
-
-void output_tlv(FILE *stream, uint8_t *buffer, size_t buffer_len, int indent)
-{
-	lwm2m_tlv_type_t type;
-	uint16_t id;
-	size_t dataIndex;
-	size_t dataLen;
-	int length = 0;
-	int result;
-
-	while (0
-			!= (result = lwm2m_decodeTLV((uint8_t *) buffer + length,
-					buffer_len - length, &type, &id, &dataIndex, &dataLen))) {
-		print_indent(stream, indent);
-		fprintf(stream, "{\r\n");
-		print_indent(stream, indent + 1);
-		fprintf(stream, "ID: %d", id);
-
-		fprintf(stream, " type: ");
-		switch (type) {
-		case LWM2M_TYPE_OBJECT_INSTANCE:
-			fprintf(stream, "Object Instance");
-			break;
-		case LWM2M_TYPE_RESOURCE_INSTANCE:
-			fprintf(stream, "Resource Instance");
-			break;
-		case LWM2M_TYPE_MULTIPLE_RESOURCE:
-			fprintf(stream, "Multiple Instances");
-			break;
-		case LWM2M_TYPE_RESOURCE:
-			fprintf(stream, "Resource");
-			break;
-		default:
-			dbg("unknown (%d)", (int) type);
-			break;
-		}
-		fprintf(stream, "\n");
-
-		print_indent(stream, indent + 1);
-		fprintf(stream, "{\n");
-		if (type == LWM2M_TYPE_OBJECT_INSTANCE
-				|| type == LWM2M_TYPE_MULTIPLE_RESOURCE) {
-			output_tlv(stream, buffer + length + dataIndex, dataLen,
-					indent + 1);
-		} else {
-			int64_t intValue;
-			double floatValue;
-
-			print_indent(stream, indent + 2);
-			fprintf(stream, "data (%zu bytes):\r\n", dataLen);
-			output_buffer(stream, (uint8_t *) buffer + length + dataIndex,
-					dataLen, indent + 2);
-
-			if (0
-					< lwm2m_opaqueToInt(buffer + length + dataIndex, dataLen,
-							&intValue)) {
-				print_indent(stream, indent + 2);
-				fprintf(stream, "data as Integer: %" PRId64 "\r\n", intValue);
-			}
-			if (0
-					< lwm2m_opaqueToFloat(buffer + length + dataIndex, dataLen,
-							&floatValue)) {
-				print_indent(stream, indent + 2);
-				fprintf(stream, "data as Float: %.16g\r\n", floatValue);
-			}
-		}
-		print_indent(stream, indent + 1);
-		fprintf(stream, "}\r\n");
-		length += result;
-		print_indent(stream, indent);
-		fprintf(stream, "}\r\n");
-	}
-}
-
-void output_data(FILE *stream, artik_lwm2m_media_type_t format, uint8_t *data,
-		int dataLength, int indent)
-{
-	int i;
-
-	if (data == NULL)
-		return;
-
-	print_indent(stream, indent);
-	fprintf(stream, "%d bytes received of type ", dataLength);
-	switch (format) {
-	case LWM2M_CONTENT_TEXT:
-		fprintf(stream, "text/plain:\r\n");
-		output_buffer(stream, data, dataLength, indent);
-		break;
-
-	case LWM2M_CONTENT_OPAQUE:
-		fprintf(stream, "application/octet-stream:\r\n");
-		output_buffer(stream, data, dataLength, indent);
-		break;
-
-	case LWM2M_CONTENT_TLV:
-		fprintf(stream, "application/vnd.oma.lwm2m+tlv:\r\n");
-		output_tlv(stream, data, dataLength, indent);
-		break;
-
-	case LWM2M_CONTENT_JSON:
-		fprintf(stream, "application/vnd.oma.lwm2m+json:\r\n");
-		print_indent(stream, indent);
-		for (i = 0; i < dataLength; i++)
-			fprintf(stream, "%c", data[i]);
-		fprintf(stream, "\n");
-		break;
-
-	default:
-		fprintf(stream, "Unknown (%d):\r\n", format);
-		output_buffer(stream, data, dataLength, indent);
-		break;
-	}
-}
-
-
-
-
-
-
-
-
-
-#define CODE_TO_STRING(X)  #X
-
-static const char *prv_status_to_string(int status)
-{
-	switch (status) {
-	case COAP_NO_ERROR:
-		return CODE_TO_STRING(COAP_NO_ERROR);
-	case COAP_IGNORE:
-		return CODE_TO_STRING(COAP_IGNORE);
-	case COAP_201_CREATED:
-		return CODE_TO_STRING(COAP_201_CREATED);
-	case COAP_202_DELETED:
-		return CODE_TO_STRING(COAP_202_DELETED);
-	case COAP_204_CHANGED:
-		return CODE_TO_STRING(COAP_204_CHANGED);
-	case COAP_205_CONTENT:
-		return CODE_TO_STRING(COAP_205_CONTENT);
-	case COAP_400_BAD_REQUEST:
-		return CODE_TO_STRING(COAP_400_BAD_REQUEST);
-	case COAP_401_UNAUTHORIZED:
-		return CODE_TO_STRING(COAP_401_UNAUTHORIZED);
-	case COAP_404_NOT_FOUND:
-		return CODE_TO_STRING(COAP_404_NOT_FOUND);
-	case COAP_405_METHOD_NOT_ALLOWED:
-		return CODE_TO_STRING(COAP_405_METHOD_NOT_ALLOWED);
-	case COAP_406_NOT_ACCEPTABLE:
-		return CODE_TO_STRING(COAP_406_NOT_ACCEPTABLE);
-	case COAP_500_INTERNAL_SERVER_ERROR:
-		return CODE_TO_STRING(COAP_500_INTERNAL_SERVER_ERROR);
-	case COAP_501_NOT_IMPLEMENTED:
-		return CODE_TO_STRING(COAP_501_NOT_IMPLEMENTED);
-	case COAP_503_SERVICE_UNAVAILABLE:
-		return CODE_TO_STRING(COAP_503_SERVICE_UNAVAILABLE);
-	default:
-		return "";
-	}
-}
-void print_status(FILE *stream, uint8_t status)
-{
-	fprintf(stream, "%d.%02d (%s)", (status & 0xE0) >> 5, status & 0x1F,
-			prv_status_to_string(status));
 }

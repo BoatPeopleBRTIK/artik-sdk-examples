@@ -8,8 +8,6 @@
 #include <artik_loop.h>
 #include <artik_cloud.h>
 
-#include <libwebsockets.h>
-
 #define TEST_TIMEOUT_MS	(30*1000)
 
 const char device_id[128] = "<device ID>";

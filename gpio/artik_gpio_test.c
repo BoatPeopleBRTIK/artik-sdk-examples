@@ -54,6 +54,11 @@ static artik_error test_rgb_led(int platid)
 	}
 
 	/* Play around with all possible colors */
+	gpio->write(leds[R].handle, 0);	/* R */
+	gpio->write(leds[G].handle, 0);	/* G */
+	gpio->write(leds[B].handle, 0);	/* B */
+	usleep(1000 * 1000);
+
 	gpio->write(leds[R].handle, 1);	/* R */
 	usleep(1000 * 1000);
 	gpio->write(leds[G].handle, 1);	/* RG */
@@ -65,9 +70,12 @@ static artik_error test_rgb_led(int platid)
 	gpio->write(leds[B].handle, 0);	/* G */
 	usleep(1000 * 1000);
 	gpio->write(leds[G].handle, 0);
+	usleep(1000 * 1000);
 	gpio->write(leds[B].handle, 1);	/* B */
 	usleep(1000 * 1000);
 	gpio->write(leds[R].handle, 1);	/* RB */
+	usleep(1000 * 1000);
+	gpio->write(leds[G].handle, 1);	/* RBG */
 	usleep(1000 * 1000);
 
 	/* Release GPIOs for LEDs */
