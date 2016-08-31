@@ -72,7 +72,7 @@ static void prv_change_obj(char *buffer, void *user_data)
 
 	result = lwm2m->client_change_object(handle, uri, (unsigned char *)data,
 			strlen(data));
-	if (result == S_OK)
+	if (result != S_OK)
 		err("client change object failed (%s)", error_msg(result));
 	else
 		fprintf(stdout, "OK");
@@ -146,7 +146,8 @@ artik_error test_lwm2m_default(bool dtls_enable)
 	config.server_port = "5683";
 	config.local_port = "56830";
 	config.name = "testlwm2mclient";
-	config.lifetime = 300;
+	config.lifetime = 3;
+	config.keep_registration = true;
 	config.storing = false;
 	config.is_bootstrap = false;
 	config.dtls_cert_path = NULL;
@@ -165,7 +166,6 @@ artik_error test_lwm2m_default(bool dtls_enable)
 	if (ret != S_OK)
 		goto exit;
 
-	ret = lwm2m->client_config(client_h, &config);
 	for (i = 0; commands[i].name != NULL; i++)
 		commands[i].user_data = (void *) client_h;
 

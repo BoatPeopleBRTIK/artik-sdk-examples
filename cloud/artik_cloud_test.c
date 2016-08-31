@@ -510,6 +510,9 @@ static artik_error test_cloud_sdr_registration(void)
 			ret = E_TIMEOUT;
 			goto exit;
 		}
+
+		fprintf(stdout, "TEST: %s Device registered with ID %s\n", __func__, device_id);
+
 	} else {
 		fprintf(stdout,
 			"TEST: %s Complete registration failed, did not receive a response\n",
@@ -518,8 +521,6 @@ static artik_error test_cloud_sdr_registration(void)
 		goto exit;
 	}
 
-	fprintf(stdout, "TEST: %s Device registered with ID %s\n", __func__,
-		device_id);
 
 	fprintf(stdout, "TEST: %s succeeded\n", __func__);
 

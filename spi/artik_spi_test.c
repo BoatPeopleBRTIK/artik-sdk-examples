@@ -41,7 +41,7 @@ static artik_error spi_test(int platid)
 
     /* Do platform specific configuration */
 	if (ARTIK710 == platid)
-		config.bus = 0;
+		config.bus = 2;
 
 	ret = spi->request(&handle, &config);
 	if (ret != S_OK) {
