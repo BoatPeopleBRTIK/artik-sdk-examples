@@ -7,8 +7,8 @@
 #include <artik_loop.h>
 #include <artik_bluetooth.h>
 
-#define PXP_DEV_BDADDR		"<Test MAC Address>"
-#define MAX_BDADDR_LEN		17
+#define MAX_BDADDR_LEN	17
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
 void print_devices(artik_bt_device *devices, int num)
 {
@@ -82,8 +82,8 @@ artik_error test_bluetooth_scan(void)
 	loop->run();
 
 exit:
-	ret = bt->stop_scan();
-	ret = bt->unset_callback(BT_EVENT_SCAN);
+	bt->stop_scan();
+	bt->unset_callback(BT_EVENT_SCAN);
 
 	fprintf(stdout, "TEST: %s %s\n", __func__,
 		(ret == S_OK) ? "succeeded" : "failed");
@@ -146,17 +146,16 @@ static void on_scan(void *data, void *user_data)
 {
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_bt_device *dev = (artik_bt_device *)data;
-	char *remote_address = (char *)user_data;
-
-	strncpy(remote_address, dev->remote_address, MAX_BDADDR_LEN);
+	char *target_address = (char *)user_data;
 
 	fprintf(stdout, "Address: %s\n", dev->remote_address);
 
-	if (strncasecmp(PXP_DEV_BDADDR, remote_address, MAX_BDADDR_LEN) == 0) {
+	if (strncasecmp(target_address, dev->remote_address, MAX_BDADDR_LEN) == 0) {
 		bt->stop_scan();
-		bt->start_bond(remote_address);
+		bt->start_bond(target_address);
 	}
 
+exit:
 	artik_release_api_module(bt);
 }
 
@@ -221,13 +220,9 @@ static void on_connect_timeout(void *user_data)
 
 	fprintf(stdout, "TEST: %s reached timeout\n", __func__);
 
-	if (strncmp(remote_address, "", MAX_BDADDR_LEN)) {
-		bt->remove_unpaired_devices();
-		bt->unset_callback(BT_EVENT_PROXIMITY);
-		bt->remove_device(remote_address);
-		bt->unset_callback(BT_EVENT_SCAN);
-		bt->unset_callback(BT_EVENT_CONNECT);
-	}
+	bt->unset_callback(BT_EVENT_PROXIMITY);
+	bt->unset_callback(BT_EVENT_SCAN);
+	bt->unset_callback(BT_EVENT_CONNECT);
 
 	loop->quit();
 
@@ -235,41 +230,36 @@ static void on_connect_timeout(void *user_data)
 	artik_release_api_module(bt);
 }
 
-static artik_error test_bluetooth_connect(void)
+static artik_error test_bluetooth_connect(const char *target)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_error ret = S_OK;
 	int timeout_id = 0;
-	char remote_address[MAX_BDADDR_LEN] = "";
 
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 
 	ret =
-	    bt->set_callback(BT_EVENT_SCAN, user_callback,
-			     (void *)remote_address);
+	    bt->set_callback(BT_EVENT_SCAN, user_callback, (void *)target);
 	if (ret != S_OK)
 		goto exit;
 	ret =
-	    bt->set_callback(BT_EVENT_BOND, user_callback,
-			     (void *)remote_address);
+	    bt->set_callback(BT_EVENT_BOND, user_callback, (void *)target);
 	if (ret != S_OK)
 		goto exit;
 	ret =
-	    bt->set_callback(BT_EVENT_CONNECT, user_callback,
-			     (void *)remote_address);
+	    bt->set_callback(BT_EVENT_CONNECT, user_callback, (void *)target);
 	if (ret != S_OK)
 		goto exit;
 	ret =
-	    bt->set_callback(BT_EVENT_PROXIMITY, user_callback,
-			     (void *)remote_address);
+	    bt->set_callback(BT_EVENT_PROXIMITY, user_callback, (void *)target);
 	if (ret != S_OK)
 		goto exit;
 	ret = bt->start_scan();
 	if (ret != S_OK)
 		goto exit;
-	loop->add_timeout_callback(&timeout_id, 60000, on_connect_timeout,
-				   (void *)remote_address);
+
+	loop->add_timeout_callback(&timeout_id, 60000, on_connect_timeout, (void *)target);
 	loop->run();
 
 exit:
@@ -281,9 +271,64 @@ exit:
 	return ret;
 }
 
-int main(void)
+static artik_error test_bluetooth_disconnect_devices()
 {
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_error ret = S_OK;
+	artik_bt_device *devices = NULL;
+	int num = 0;
+	int i;
+
+	fprintf(stdout, "TEST: %s starting\n", __func__);
+
+	fprintf(stdout, "TEST: %s - remove unpaired devices\n", __func__);
+	ret = bt->remove_unpaired_devices();
+	if (ret != S_OK)
+		goto exit;
+
+	fprintf(stdout, "TEST: %s - remove connected devices\n", __func__);
+	ret = bt->get_connected_devices(&devices, &num);
+	if (ret != S_OK)
+		goto exit;
+
+	for (i = 0; i < num; i++) {
+		ret = bt->disconnect(devices[i].remote_address);
+		if (ret != S_OK)
+			goto exit;
+	}
+
+	bt->free_devices(devices, num);
+	devices = NULL;
+	num = 0;
+
+	fprintf(stdout, "TEST: %s - remove paired devices\n", __func__);
+	ret = bt->get_paired_devices(&devices, &num);
+	if (ret != S_OK)
+		goto exit;
+
+	for (i = 0; i < num; i++) {
+		ret = bt->remove_device(devices[i].remote_address);
+		if (ret != S_OK)
+			goto exit;
+	}
+
+	bt->free_devices(devices, num);
+	devices = NULL;
+	num = 0;
+
+exit:
+	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
+
+	artik_release_api_module(bt);
+
+	return ret;
+}
+
+int main(int argc, char *argv[])
+{
+	int opt;
+	artik_error ret = S_OK;
+	char target_address[MAX_BDADDR_LEN+1] = "";
 
 	if (!artik_is_module_available(ARTIK_MODULE_BLUETOOTH)) {
 		fprintf(stdout,
@@ -291,15 +336,35 @@ int main(void)
 		return -1;
 	}
 
+	while ((opt = getopt(argc, argv, "t:")) != -1) {
+		switch (opt) {
+		case 't':
+			strncpy(target_address, optarg, MAX_BDADDR_LEN);
+			break;
+		default:
+			printf("Usage: bluetooth-test -t <target BDADDR to connect to>\r\n");
+			return 0;
+		}
+	}
+
 	ret = test_bluetooth_scan();
-	if (ret != S_OK)
-		goto exit;
-	ret = test_bluetooth_connect();
-	if (ret != S_OK)
-		goto exit;
+	CHECK_RET(ret);
+
+	/* Only call this test if a target address was provided */
+	if (strncmp(target_address, "", MAX_BDADDR_LEN) != 0) {
+		ret = test_bluetooth_connect(target_address);
+		CHECK_RET(ret);
+	}
+
 	ret = test_bluetooth_devices();
-	if (ret != S_OK)
-		goto exit;
+	CHECK_RET(ret);
+
+	ret = test_bluetooth_disconnect_devices();
+	CHECK_RET(ret);
+
+	ret = test_bluetooth_devices();
+	CHECK_RET(ret);
+
 exit:
 	return (ret == S_OK) ? 0 : -1;
 }

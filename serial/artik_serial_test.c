@@ -11,8 +11,10 @@
 #include <artik_serial.h>
 #include <artik_loop.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
+
 /*
- * This is a loopback test. On Artik 520 development board,
+ * This is a loopback test. On Artik 520 development platform,
  * connect a wire between "TX" and "RX" pins
  * on connector J26.
  */
@@ -123,8 +125,11 @@ int main(void)
 		return -1;
 	}
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710))
+	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710)) {
 		ret = test_serial_loopback(platid);
+		CHECK_RET(ret);
+	}
 
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

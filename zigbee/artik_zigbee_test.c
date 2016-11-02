@@ -419,7 +419,7 @@ void _callback(void *data, void *user_data)
 		fprintf(stdout, "Received new device information\n");
 		_print_device_info((struct zigbee_device_info *)response->payload);
 		break;
-	case ZIGBEE_RESPONSE_ONOFF_INFO:
+	case ZIGBEE_RESPONSE_ONOFF_COMMAND:
 		onoff_info = (struct zigbee_onoff_info *)response->payload;
 		if (!onoff_info)
 			return;

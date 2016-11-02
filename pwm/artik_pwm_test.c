@@ -7,6 +7,8 @@
 #include <artik_platform.h>
 #include <artik_pwm.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
+
 static artik_pwm_config config = {
 	1,
 	"pwm",
@@ -54,8 +56,11 @@ int main(void)
 	artik_error ret = S_OK;
 	int platid = artik_get_platform();
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020)  || (platid == ARTIK710))
+	if ((platid == ARTIK520) || (platid == ARTIK1020)  || (platid == ARTIK710)) {
 		ret = pwm_test_frequency(platid);
+		CHECK_RET(ret);
+	}
 
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

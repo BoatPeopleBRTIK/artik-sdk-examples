@@ -8,14 +8,16 @@
 #include <artik_loop.h>
 #include <artik_cloud.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 #define TEST_TIMEOUT_MS	(30*1000)
+#define MAX_PARAM_LEN 128
 
-const char device_id[128] = "<device ID>";
-const char access_token[128] = "<access token>";
-const char sdr_device_id[128] = "<SDR device ID>";
-const char sdr_access_token[128] = "<SDR access token>";
-char test_message[256] = "{\"data\": {\"actions\": {\"name\": \"setOn\"}},\"ddid\": \"<device ID>\",\"sdid\": \"<device ID>\",\"type\": \"message\"}";
-char sdr_test_message[256] = "{\"data\": {\"actions\": {\"name\": \"setOn\"}},\"ddid\": \"<SDR device ID>\",\"sdid\": \"<SDR device ID>\",\"type\": \"message\"}";
+char access_token[MAX_PARAM_LEN];
+char device_id[MAX_PARAM_LEN];
+char sdr_access_token[MAX_PARAM_LEN];
+char sdr_device_id[MAX_PARAM_LEN];
+char *test_message = NULL;
+char *sdr_test_message = NULL;
 
 static void on_timeout_callback(void *user_data)
 {
@@ -178,11 +180,50 @@ static artik_error test_websocket_sdr(int timeout_ms)
 
 int main(int argc, char *argv[])
 {
+	int opt;
 	artik_error ret = S_OK;
 
+	while ((opt = getopt(argc, argv, "t:d:a:s:m:g:")) != -1) {
+		switch (opt) {
+		case 't':
+			strncpy(access_token, optarg, MAX_PARAM_LEN);
+			break;
+		case 'd':
+			strncpy(device_id, optarg, MAX_PARAM_LEN);
+			break;
+		case 'a':
+			strncpy(sdr_access_token, optarg, MAX_PARAM_LEN);
+			break;
+		case 's':
+			strncpy(sdr_device_id, optarg, MAX_PARAM_LEN);
+			break;
+		case 'm':
+			test_message = strndup(optarg, strlen(optarg));
+			break;
+		case 'g':
+			sdr_test_message = strndup(optarg, strlen(optarg));
+			break;
+		default:
+			printf("Usage: websocket-test [-t <access token>] [-d <device id>] [-a <SDR access token>] \r\n");
+			printf("\t[-s <SDR device ID>] [-m <JSON type test message>] [-g <JSON type SDR test message>] \r\n");
+			return 0;
+		}
+	}
+
 	ret = test_websocket_sdr(TEST_TIMEOUT_MS);
+	CHECK_RET(ret);
+
 	ret = test_websocket_write(TEST_TIMEOUT_MS);
+	CHECK_RET(ret);
+
 	ret = test_websocket_read(TEST_TIMEOUT_MS);
+	CHECK_RET(ret);
+
+exit:
+	if (test_message != NULL)
+		free(test_message);
+	if (sdr_test_message != NULL)
+		free(sdr_test_message);
 
 	return (ret == S_OK) ? 0 : -1;
 }

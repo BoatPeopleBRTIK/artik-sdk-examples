@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +5,8 @@
 
 #include <artik_module.h>
 #include <artik_adc.h>
+
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
 static artik_adc_config config = { 0, "adc", NULL };
 
@@ -58,6 +59,8 @@ int main(void)
 	artik_error ret = S_OK;
 
 	ret = adc_test_value();
+	CHECK_RET(ret);
 
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

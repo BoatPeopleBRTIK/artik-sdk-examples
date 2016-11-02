@@ -7,6 +7,8 @@
 #include <artik_platform.h>
 #include <artik_gpio.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
+
 enum {
 	R = 0,
 	G,
@@ -167,8 +169,12 @@ int main(void)
 
 	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710)) {
 		ret = test_button_interrupt(platid);
+		CHECK_RET(ret);
+
 		ret = test_rgb_led(platid);
+		CHECK_RET(ret);
 	}
 
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

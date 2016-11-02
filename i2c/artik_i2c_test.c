@@ -5,6 +5,8 @@
 #include <artik_platform.h>
 #include <artik_i2c.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
+
 /*
  * This test only works if the CW2015 Linux driver is unbound first:
  * artik520 : $ echo 1-0062 > /sys/bus/i2c/drivers/cw201x/unbind
@@ -121,8 +123,11 @@ int main(void)
 	/* Unbound the driver */
 	system(cmd);
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710))
+	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710)) {
 		ret = i2c_test_cw2015(platid);
+		CHECK_RET(ret);
+	}
 
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

@@ -8,6 +8,7 @@
 #include <artik_platform.h>
 #include <artik_spi.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 static artik_spi_config config = {
@@ -84,6 +85,8 @@ int main(void)
 	int platid = artik_get_platform();
 
 	ret = spi_test(platid);
+	CHECK_RET(ret);
 
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

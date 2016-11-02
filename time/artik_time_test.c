@@ -18,6 +18,7 @@
 #include <artik_time.h>
 
 #define MAX_SIZE 128
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
 static int end = 1;
 artik_time_module *time_module_p;
@@ -31,8 +32,9 @@ static void sig_handler(int sig)
 
 typedef void (*t_ptr_func) (int);
 
-static void test_time_loopback(void)
+static artik_error test_time_loopback(void)
 {
+	artik_error ret = S_OK;
 	artik_msecond valtime = 0, oldtime = 0, nb_seconds = 1500;
 	artik_time_t val;
 	t_ptr_func prev = (t_ptr_func) signal(SIGINT, sig_handler);
@@ -87,11 +89,13 @@ static void test_time_loopback(void)
 	signal(SIGINT, prev);
 	time_module_p->delete_alarm(handle);
 	fprintf(stdout, "Release TIME Module\n");
+
+	return ret;
 }
 
-void test_time_sync_ntp(void)
+artik_error test_time_sync_ntp(void)
 {
-	artik_error state;
+	artik_error ret;
 	time_t curr_time;
 
 	fprintf(stdout, "TEST: %s started\n", __func__);
@@ -99,22 +103,34 @@ void test_time_sync_ntp(void)
 	curr_time = time(0);
 	fprintf(stdout, "Current system time: %s", ctime(&curr_time));
 
-	state = time_module_p->sync_ntp(hostname);
-	if (state != S_OK)
+	ret = time_module_p->sync_ntp(hostname);
+	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed: ERROR(%d)\n", __func__,
-			state);
+			ret);
+		return ret;
+	}
 
 	curr_time = time(0);
 	fprintf(stdout, "Modified system time: %s", ctime(&curr_time));
 	fprintf(stdout, "TEST: %s finished\n", __func__);
+
+	return ret;
 }
 
 int main(void)
 {
+	artik_error ret = S_OK;
+
 	time_module_p = (artik_time_module *)artik_request_api_module("time");
-	test_time_loopback();
-	test_time_sync_ntp();
+
+	ret = test_time_loopback();
+	CHECK_RET(ret);
+
+	ret = test_time_sync_ntp();
+	CHECK_RET(ret);
+
+exit:
 	artik_release_api_module(time_module_p);
 
-	return 0;
+	return (ret == S_OK) ? 0 : -1;
 }

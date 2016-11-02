@@ -5,6 +5,8 @@
 #include <artik_module.h>
 #include <artik_http.h>
 
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
+
 artik_error test_http_get(void)
 {
 	artik_http_module *http = (artik_http_module *)artik_request_api_module("http");
@@ -86,7 +88,11 @@ int main(void)
 	}
 
 	ret = test_http_get();
-	ret = test_http_post();
+	CHECK_RET(ret);
 
+	ret = test_http_post();
+	CHECK_RET(ret);
+
+exit:
 	return (ret == S_OK) ? 0 : -1;
 }

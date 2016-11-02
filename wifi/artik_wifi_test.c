@@ -7,12 +7,11 @@
 #include <artik_loop.h>
 #include <artik_wifi.h>
 
-#define AP_TO_CONNECT	"<put a SSID name here>"
-#define AP_PASSWORD		"<put the password of the SSID here>"
+#define MAX_PARAM_LEN	256
 #define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
-static char *ssid = AP_TO_CONNECT;
-static char *psk = AP_PASSWORD;
+static char ssid[MAX_PARAM_LEN];
+static char psk[MAX_PARAM_LEN];
 
 static void get_scan_result(void)
 {
@@ -144,6 +143,7 @@ exit:
 
 int main(int argc, char *argv[])
 {
+	int opt;
 	artik_error ret = S_OK;
 
 	if (!artik_is_module_available(ARTIK_MODULE_WIFI)) {
@@ -152,17 +152,27 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	while ((opt = getopt(argc, argv, "s:p:")) != -1) {
+		switch (opt) {
+		case 's':
+			strncpy(ssid, optarg, MAX_PARAM_LEN);
+			fprintf(stdout, "ssid = %s \n", ssid);
+			break;
+		case 'p':
+			strncpy(psk, optarg, MAX_PARAM_LEN);
+			fprintf(stdout, "psk = %s \n", psk);
+			break;
+		default:
+			printf("Usage: wifi-test [-s <ssid>] [-p <psk>] \r\n");
+			return 0;
+		}
+	}
+
 	ret = test_wifi_scan();
 	CHECK_RET(ret);
 
-	if (argc == 3) {
-		ssid = argv[1];
-		psk = argv[2];
-		fprintf(stdout, "ssid=%s, psk=%s\n", ssid, psk);
-
-		ret = test_wifi_connect();
-		CHECK_RET(ret);
-	}
+	ret = test_wifi_connect();
+	CHECK_RET(ret);
 
 exit:
 	return (ret == S_OK) ? 0 : -1;

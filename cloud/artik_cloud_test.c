@@ -7,15 +7,17 @@
 #include <artik_module.h>
 #include <artik_cloud.h>
 
-const char token[] = "";
-const char device_id[] = "";
-const char user_id[] = "";
-const char app_id[] = "";
-const char message[] = "";
-const char action[] = "";
-const char device_type_id[] = "";
-const char sdr_device_type_id[] = "";
-const char sdr_vendor_id[] = "";
+#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
+
+char *token = NULL;
+char *device_id = NULL;
+char *user_id = NULL;
+char *app_id = NULL;
+char *message = NULL;
+char *action = NULL;
+char *device_type_id = NULL;
+char *sdr_device_type_id = NULL;
+char *sdr_vendor_id = NULL;
 
 static char *parse_json_object(const char *data, const char *obj)
 {
@@ -211,7 +213,7 @@ static artik_error test_get_device_token(const char *t, const char *did)
 }
 
 static artik_error test_cloud_message(const char *t, const char *did,
-				      const char *msg)
+					  const char *msg)
 {
 	artik_cloud_module *cloud = (artik_cloud_module *)artik_request_api_module("cloud");
 	artik_error ret = S_OK;
@@ -240,7 +242,7 @@ static artik_error test_cloud_message(const char *t, const char *did,
 }
 
 static artik_error test_cloud_action(const char *t, const char *did,
-				     const char *act)
+					 const char *act)
 {
 	artik_cloud_module *cloud = (artik_cloud_module *)artik_request_api_module("cloud");
 	artik_error ret = S_OK;
@@ -248,7 +250,7 @@ static artik_error test_cloud_action(const char *t, const char *did,
 
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 
-	ret = cloud->send_message(t, did, act, &response);
+	ret = cloud->send_action(t, did, act, &response);
 
 	if (response) {
 		fprintf(stdout, "TEST: %s response data: %s\n", __func__,
@@ -468,7 +470,7 @@ static artik_error test_cloud_sdr_registration(void)
 
 			/* Check if completed */
 			if (strncmp
-			    (reg_status, "PENDING_USER_CONFIRMATION", 128))
+				(reg_status, "PENDING_USER_CONFIRMATION", 128))
 				break;
 			free(reg_status);
 			free(response);
@@ -550,6 +552,7 @@ exit:
 
 int main(int argc, char *argv[])
 {
+	int opt;
 	artik_error ret = S_OK;
 
 	if (!artik_is_module_available(ARTIK_MODULE_CLOUD)) {
@@ -558,18 +561,98 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	while ((opt = getopt(argc, argv, "t:d:u:p:m:a:y:x:v:")) != -1) {
+		switch (opt) {
+		case 't':
+			token = strndup(optarg, strlen(optarg));
+			break;
+		case 'd':
+			device_id = strndup(optarg, strlen(optarg));
+			break;
+		case 'u':
+			user_id = strndup(optarg, strlen(optarg));
+			break;
+		case 'p':
+			app_id = strndup(optarg, strlen(optarg));
+			break;
+		case 'm':
+			message = strndup(optarg, strlen(optarg));
+			break;
+		case 'a':
+			action = strndup(optarg, strlen(optarg));
+			break;
+		case 'y':
+			device_type_id = strndup(optarg, strlen(optarg));
+			break;
+		case 'x':
+			sdr_device_type_id = strndup(optarg, strlen(optarg));
+			break;
+		case 'v':
+			sdr_vendor_id = strndup(optarg, strlen(optarg));
+			break;
+		default:
+			printf("Usage: cloud-test [-t <access token>] [-d <device id>] [-u <user id>] \r\n");
+			printf("\t[-p <app id>] [-m <JSON type message>] [-a <JSON type action>] \r\n");
+			printf("\t[-y <device type id>] [-x <sdr device type id>] [-v <sdr vendor id>] \r\n");
+			return 0;
+		}
+	}
+
 	ret = test_get_user_profile(token);
+	CHECK_RET(ret);
+
 	ret = test_get_user_devices(token, user_id);
+	CHECK_RET(ret);
+
 	ret = test_get_user_device_types(token, user_id);
+	CHECK_RET(ret);
+
 	ret = test_get_user_application_properties(token, user_id, app_id);
+	CHECK_RET(ret);
+
 	ret = test_get_device(token, device_id);
+	CHECK_RET(ret);
+
 	ret = test_get_device_token(token, device_id);
+	CHECK_RET(ret);
+
 	ret = test_cloud_message(token, device_id, message);
+	CHECK_RET(ret);
+
 	ret = test_cloud_action(token, device_id, action);
+	CHECK_RET(ret);
+
 	ret = test_update_device_token(token, device_id);
+	CHECK_RET(ret);
+
 	ret = test_delete_device_token(token, device_id);
+	CHECK_RET(ret);
+
 	ret = test_add_delete_device(token, user_id, device_type_id);
+	CHECK_RET(ret);
+
 	ret = test_cloud_sdr_registration();
+	CHECK_RET(ret);
+
+exit:
+	if (token != NULL)
+		free(token);
+	if (device_id != NULL)
+		free(device_id);
+	if (user_id != NULL)
+		free(user_id);
+	if (app_id != NULL)
+		free(app_id);
+	if (message != NULL)
+		free(message);
+	if (action != NULL)
+		free(action);
+	if (device_type_id != NULL)
+		free(device_type_id);
+	if (sdr_device_type_id != NULL)
+		free(sdr_device_type_id);
+	if (sdr_vendor_id != NULL)
+		free(sdr_vendor_id);
 
 	return (ret == S_OK) ? 0 : -1;
 }
