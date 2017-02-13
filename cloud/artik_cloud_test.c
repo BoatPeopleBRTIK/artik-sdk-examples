@@ -9,15 +9,13 @@
 
 #define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
-char *token = NULL;
-char *device_id = NULL;
-char *user_id = NULL;
-char *app_id = NULL;
-char *message = NULL;
-char *action = NULL;
-char *device_type_id = NULL;
-char *sdr_device_type_id = NULL;
-char *sdr_vendor_id = NULL;
+static char *token = NULL;
+static char *device_id = NULL;
+static char *user_id = NULL;
+static char *app_id = NULL;
+static char *message = NULL;
+static char *action = NULL;
+static char *device_type_id = NULL;
 
 static char *parse_json_object(const char *data, const char *obj)
 {
@@ -400,156 +398,6 @@ exit:
 	return ret;
 }
 
-static artik_error test_cloud_sdr_registration(void)
-{
-	artik_cloud_module *cloud = (artik_cloud_module *)artik_request_api_module("cloud");
-	artik_error ret = S_OK;
-	char *response = NULL;
-	char *reg_id = NULL;
-	char *reg_nonce = NULL;
-	char *reg_pin = NULL;
-	char *reg_status = NULL;
-	char *device_id = NULL;
-
-	fprintf(stdout, "TEST: %s starting\n", __func__);
-
-	/* Start registration process */
-	ret = cloud->sdr_start_registration(sdr_device_type_id, sdr_vendor_id, &response);
-	if (ret != S_OK) {
-		if (response)
-			fprintf(stdout,
-				"TEST: %s HTTP error, response: %s\n",
-				__func__, response);
-		goto exit;
-	}
-
-	if (response) {
-		/* Find rid and nonce strings */
-		reg_id = parse_json_object(response, "rid");
-		reg_nonce = parse_json_object(response, "nonce");
-		reg_pin = parse_json_object(response, "pin");
-		free(response);
-		response = NULL;
-	}
-
-	if (!reg_id || !reg_nonce || !reg_pin) {
-		fprintf(stdout,
-			"TEST: %s failed to parse result from the JSON response\n",
-			__func__);
-		ret = E_HTTP_ERROR;
-		goto exit;
-	}
-
-	if (ret != S_OK) {
-		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
-		goto exit;
-	}
-
-	fprintf(stdout, "TEST: %s Enter PIN %s\n", __func__, reg_pin);
-
-	/* Wait for user to enter the PIN */
-	while (true) {
-		ret = cloud->sdr_registration_status(reg_id, &response);
-		if (ret != S_OK) {
-			fprintf(stdout,
-				"TEST: %s failed to get status (err=%d)\n",
-				__func__, ret);
-			goto exit;
-		}
-
-		if (response) {
-			/* Find status */
-			reg_status = parse_json_object(response, "status");
-			if (!reg_status) {
-				fprintf(stdout,
-					"TEST: %s failed to parse status from the JSON response\n",
-					__func__);
-				ret = E_HTTP_ERROR;
-				goto exit;
-			}
-
-			/* Check if completed */
-			if (strncmp
-				(reg_status, "PENDING_USER_CONFIRMATION", 128))
-				break;
-			free(reg_status);
-			free(response);
-			reg_status = NULL;
-			response = NULL;
-		}
-
-		usleep(1000 * 1000);
-
-		fprintf(stdout, ".");
-		fflush(stdout);
-	}
-
-	fprintf(stdout, "\n");
-
-	if (strncmp(reg_status, "PENDING_DEVICE_COMPLETION", 128)) {
-		fprintf(stdout,
-			"TEST: %s Registration failed, probably because it expired\n",
-			__func__);
-		ret = E_TIMEOUT;
-		goto exit;
-	}
-
-	/* Finalize the registration */
-	ret = cloud->sdr_complete_registration(reg_id, reg_nonce, &response);
-	if (ret != S_OK) {
-		fprintf(stdout,
-			"TEST: %s Complete registration failed (err=%d)\n",
-			__func__, ret);
-		goto exit;
-	}
-
-	if (response) {
-		device_id = parse_json_object(response, "did");
-		if (!device_id) {
-			fprintf(stdout,
-				"TEST: %s Complete registration failed, could not pare JSON response\n",
-				__func__);
-			ret = E_TIMEOUT;
-			goto exit;
-		}
-
-		fprintf(stdout, "TEST: %s Device registered with ID %s\n", __func__, device_id);
-
-	} else {
-		fprintf(stdout,
-			"TEST: %s Complete registration failed, did not receive a response\n",
-			__func__);
-		ret = E_TIMEOUT;
-		goto exit;
-	}
-
-
-	fprintf(stdout, "TEST: %s succeeded\n", __func__);
-
-exit:
-	if (response)
-		free(response);
-
-	if (device_id)
-		free(device_id);
-
-	if (reg_pin)
-		free(reg_pin);
-
-	if (reg_status)
-		free(reg_status);
-
-	if (reg_id)
-		free(reg_id);
-
-	if (reg_nonce)
-		free(reg_nonce);
-
-	artik_release_api_module(cloud);
-
-	return ret;
-}
-
 int main(int argc, char *argv[])
 {
 	int opt;
@@ -561,7 +409,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	while ((opt = getopt(argc, argv, "t:d:u:p:m:a:y:x:v:")) != -1) {
+	while ((opt = getopt(argc, argv, "t:d:u:p:m:a:y:")) != -1) {
 		switch (opt) {
 		case 't':
 			token = strndup(optarg, strlen(optarg));
@@ -584,16 +432,10 @@ int main(int argc, char *argv[])
 		case 'y':
 			device_type_id = strndup(optarg, strlen(optarg));
 			break;
-		case 'x':
-			sdr_device_type_id = strndup(optarg, strlen(optarg));
-			break;
-		case 'v':
-			sdr_vendor_id = strndup(optarg, strlen(optarg));
-			break;
 		default:
 			printf("Usage: cloud-test [-t <access token>] [-d <device id>] [-u <user id>] \r\n");
 			printf("\t[-p <app id>] [-m <JSON type message>] [-a <JSON type action>] \r\n");
-			printf("\t[-y <device type id>] [-x <sdr device type id>] [-v <sdr vendor id>] \r\n");
+			printf("\t[-y <device type id>]\r\n");
 			return 0;
 		}
 	}
@@ -631,9 +473,6 @@ int main(int argc, char *argv[])
 	ret = test_add_delete_device(token, user_id, device_type_id);
 	CHECK_RET(ret);
 
-	ret = test_cloud_sdr_registration();
-	CHECK_RET(ret);
-
 exit:
 	if (token != NULL)
 		free(token);
@@ -649,10 +488,6 @@ exit:
 		free(action);
 	if (device_type_id != NULL)
 		free(device_type_id);
-	if (sdr_device_type_id != NULL)
-		free(sdr_device_type_id);
-	if (sdr_vendor_id != NULL)
-		free(sdr_vendor_id);
 
 	return (ret == S_OK) ? 0 : -1;
 }

@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <sys/select.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,16 +30,38 @@ static artik_serial_config config = {
 	NULL
 };
 
+static artik_serial_handle handle = NULL;
+static const char* current_test = NULL;
 #define MAX_RX_BUF	64
 
-static void forward_data(void *param, char *buf)
+static void signal_handler(int signum)
+{
+	if (signum == SIGALRM) {
+		fprintf(stderr, "TEST: %s failed, timeout expired\n", current_test);
+		exit(-1);
+	}
+}
+
+static void set_timeout(const char *test_name, unsigned int seconds)
+{
+	current_test = test_name;
+	signal(SIGALRM, signal_handler);
+	alarm(seconds);
+}
+
+static void unset_timeout()
+{
+	alarm(0);
+	signal(SIGALRM, SIG_DFL);
+}
+
+static void forward_data(void *param, unsigned char *buf, int len)
 {
 	if (buf != NULL)
 		fprintf(stdout, "Forward read: %s\n", buf);
 	else {
 		artik_serial_module *serial = (artik_serial_module *)artik_request_api_module("serial");
 		artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-		artik_serial_handle handle = (artik_serial_handle)param;
 
 		serial->unset_received_callback(handle);
 		loop->quit();
@@ -52,12 +75,11 @@ static artik_error test_serial_loopback(int platid)
 {
 	artik_serial_module *serial = (artik_serial_module *)artik_request_api_module("serial");
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-	artik_serial_handle handle = NULL;
 	artik_error ret = S_OK;
 	char tx_buf[] = "This is a test buffer containing test data\0";
 	int tx_len = strlen(tx_buf);
 	char buff[128] = "";
-	int len = 128;
+	int len = 0;
 	int maxlen = 0;
 
 	if (platid == ARTIK520) {
@@ -66,8 +88,11 @@ static artik_error test_serial_loopback(int platid)
 	} else if (platid == ARTIK1020) {
 		config.port_num = ARTIK_A1020_SCOM_XSCOM2;
 		config.name = "UART1";
-	} else {
+	} else if (platid == ARTIK710) {
 		config.port_num = ARTIK_A710_UART0;
+		config.name = "UART4";
+	} else {
+		config.port_num = ARTIK_A530_UART0;
 		config.name = "UART4";
 	}
 
@@ -79,18 +104,23 @@ static artik_error test_serial_loopback(int platid)
 			__func__, ret);
 		return ret;
 	}
+
+	set_timeout(__func__, 5);
 	/* Send test data */
-	ret = serial->write(handle, tx_buf, &tx_len);
+	len = tx_len;
+	ret = serial->write(handle, (unsigned char*)tx_buf, &len);
 	if (ret != S_OK) {
 		fprintf(stderr, "TEST: %s failed to send data (%d)\n", __func__, ret);
 		goto exit;
 	}
 
 	fprintf(stdout, "TEST: with read\n");
+	len = 128;
 	while (maxlen < tx_len) {
-		serial->read(handle, &buff[maxlen], &len);
-		if (strlen(buff) > (unsigned int)maxlen)
-			maxlen = strlen(buff);
+		ret = serial->read(handle, (unsigned char*)buff+maxlen, &len);
+		if (ret != S_OK) {
+			maxlen += len;
+		}
 	}
 	fprintf(stdout, "buff : %s\n", buff);
 	fprintf(stdout, "TEST: with callback\n");
@@ -98,8 +128,8 @@ static artik_error test_serial_loopback(int platid)
 	char tx_bufs[] = "This is a second test\0";
 
 	tx_len = strlen(tx_bufs);
-	ret = serial->write(handle, tx_bufs, &tx_len);
-	ret = serial->set_received_callback(handle, forward_data, (void *)handle);
+	ret = serial->write(handle, (unsigned char*)tx_bufs, &tx_len);
+	ret = serial->set_received_callback(handle, forward_data, NULL);
 	loop->run();
 	if (ret != S_OK) {
 		fprintf(stderr, "TEST: %s failed while waiting for RX data (%d)\n", __func__, ret);
@@ -107,7 +137,10 @@ static artik_error test_serial_loopback(int platid)
 	}
 	serial->unset_received_callback(handle);
 	fprintf(stdout, "TEST: %s succeeded\n", __func__);
+
+
 exit:
+	unset_timeout();
 	serial->release(handle);
 
 	artik_release_api_module(serial);
@@ -125,7 +158,7 @@ int main(void)
 		return -1;
 	}
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710)) {
+	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710) || (platid == ARTIK530)) {
 		ret = test_serial_loopback(platid);
 		CHECK_RET(ret);
 	}

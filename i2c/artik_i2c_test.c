@@ -17,6 +17,7 @@
 const char *cmd_artik520  = "echo 1-0062 > /sys/bus/i2c/drivers/cw201x/unbind";
 const char *cmd_artik1020 = "echo 0-0062 > /sys/bus/i2c/drivers/cw201x/unbind";
 const char *cmd_artik710  = "echo 8-0062 > /sys/bus/i2c/drivers/cw201x/unbind";
+const char *cmd_artik530  = "echo 8-0062 > /sys/bus/i2c/drivers/cw201x/unbind";
 
 static artik_i2c_config config = {
 	1,
@@ -111,19 +112,21 @@ int main(void)
 {
 	artik_error ret = S_OK;
 	int platid = artik_get_platform();
-	const char *cmd = NULL;
+	char *cmd = NULL;
 
 	if (platid == ARTIK520)
 		cmd = cmd_artik520;
 	else if (platid == ARTIK710)
 		cmd = cmd_artik710;
+	else if (platid == ARTIK530)
+		cmd = cmd_artik530;
 	else
 		cmd = cmd_artik1020;
 
 	/* Unbound the driver */
 	system(cmd);
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710)) {
+	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710) || (platid == ARTIK530)) {
 		ret = i2c_test_cw2015(platid);
 		CHECK_RET(ret);
 	}

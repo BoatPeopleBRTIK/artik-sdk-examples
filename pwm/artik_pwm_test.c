@@ -28,8 +28,10 @@ static artik_error pwm_test_frequency(int platid)
 		config.pin_num = ARTIK_A520_PWM1;
 	else if (platid == ARTIK1020)
 		config.pin_num = ARTIK_A1020_PWM1;
-	else
+	else if (platid == ARTIK710)
 		config.pin_num = ARTIK_A710_PWM0;
+	else 
+		config.pin_num = ARTIK_A530_PWM0;
 
 	fprintf(stdout, "TEST: %s\n", __func__);
 
@@ -56,7 +58,7 @@ int main(void)
 	artik_error ret = S_OK;
 	int platid = artik_get_platform();
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020)  || (platid == ARTIK710)) {
+	if ((platid == ARTIK520) || (platid == ARTIK1020)  || (platid == ARTIK710) || (platid == ARTIK530)) {
 		ret = pwm_test_frequency(platid);
 		CHECK_RET(ret);
 	}

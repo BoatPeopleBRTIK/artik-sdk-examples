@@ -12,8 +12,9 @@ static artik_error test_get_current_ip(void)
 	artik_error ret;
 	artik_network_ip *current_ip;
 
-	current_ip = (artik_network_ip *) malloc(sizeof(artik_network_ip));
-	fprintf(stdout, "TEST: %s\n", __func__);
+	fprintf(stdout, "TEST: %s\n starting", __func__);
+
+	current_ip = (artik_network_ip *)malloc(sizeof(artik_network_ip));
 
 	/* Check Current IP */
 	ret = network->get_current_ip(current_ip);
@@ -45,15 +46,21 @@ void _callback(int *data, void *user_data)
 	test_get_current_ip();
 }
 
-artik_error test_get_online_status(void)
+static artik_error test_get_online_status(void)
 {
 	artik_network_module *network = (artik_network_module *)artik_request_api_module("network");
 	artik_error ret;
 
-	ret = network->get_online_status(_callback, NULL);
-	if (ret < S_OK)
-		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
+	fprintf(stdout, "TEST: %s\n starting", __func__);
 
+	ret = network->get_online_status(_callback, NULL);
+	if (ret != S_OK) {
+		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
+		goto exit;
+	}
+
+	fprintf(stdout, "TEST: %s succeeded\n", __func__);
+exit:
 	artik_release_api_module(network);
 
 	return ret;

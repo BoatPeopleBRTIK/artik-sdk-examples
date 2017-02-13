@@ -10,6 +10,8 @@
 #define MAX_BDADDR_LEN	17
 #define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
+static artik_bluetooth_module *bt = NULL;
+
 void print_devices(artik_bt_device *devices, int num)
 {
 	int i = 0, j = 0;
@@ -65,7 +67,6 @@ static void on_timeout_callback(void *user_data)
 artik_error test_bluetooth_scan(void)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_error ret = S_OK;
 	int timeout_id = 0;
 
@@ -89,14 +90,12 @@ exit:
 		(ret == S_OK) ? "succeeded" : "failed");
 
 	artik_release_api_module(loop);
-	artik_release_api_module(bt);
 
 	return ret;
 }
 
 static artik_error test_bluetooth_devices(void)
 {
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_error ret = S_OK;
 	artik_bt_device *devices = NULL;
 	int num = 0;
@@ -137,14 +136,11 @@ exit:
 	if (devices && (num > 0))
 		bt->free_devices(devices, num);
 
-	artik_release_api_module(bt);
-
 	return ret;
 }
 
 static void on_scan(void *data, void *user_data)
 {
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_bt_device *dev = (artik_bt_device *)data;
 	char *target_address = (char *)user_data;
 
@@ -154,34 +150,25 @@ static void on_scan(void *data, void *user_data)
 		bt->stop_scan();
 		bt->start_bond(target_address);
 	}
-
-exit:
-	artik_release_api_module(bt);
 }
 
 static void on_bond(void *data, void *user_data)
 {
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	char *remote_address = (char *)user_data;
 	bool paired = *(bool *)data;
 
 	fprintf(stdout, "on_bond %s\n", paired ? "Paired" : "UnPaired");
 	bt->connect(remote_address);
-
-	artik_release_api_module(bt);
 }
 
 static void on_connect(void *data, void *user_data)
 {
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	char *remote_address = (char *)user_data;
 	bool connected = *(bool *)data;
 
 	fprintf(stdout, "on_connect %s\n",
 		connected ? "Connected" : "Disconnected");
 	bt->pxp_set_linkloss_level(remote_address, BT_ALERT_LEVEL_MILD);
-
-	artik_release_api_module(bt);
 }
 
 static void on_proximity(void *data, void *user_data)
@@ -215,7 +202,6 @@ static void user_callback(artik_bt_event event, void *data, void *user_data)
 static void on_connect_timeout(void *user_data)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	char *remote_address = (char *)user_data;
 
 	fprintf(stdout, "TEST: %s reached timeout\n", __func__);
@@ -227,13 +213,11 @@ static void on_connect_timeout(void *user_data)
 	loop->quit();
 
 	artik_release_api_module(loop);
-	artik_release_api_module(bt);
 }
 
 static artik_error test_bluetooth_connect(const char *target)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_error ret = S_OK;
 	int timeout_id = 0;
 
@@ -267,13 +251,12 @@ exit:
 		(ret == S_OK) ? "succeeded" : "failed");
 
 	artik_release_api_module(loop);
-	artik_release_api_module(bt);
+
 	return ret;
 }
 
 static artik_error test_bluetooth_disconnect_devices()
 {
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
 	artik_error ret = S_OK;
 	artik_bt_device *devices = NULL;
 	int num = 0;
@@ -319,8 +302,6 @@ static artik_error test_bluetooth_disconnect_devices()
 exit:
 	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
 
-	artik_release_api_module(bt);
-
 	return ret;
 }
 
@@ -347,6 +328,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	bt = (artik_bluetooth_module *)artik_request_api_module("bluetooth");
+	if (!bt) {
+		fprintf(stdout,
+			"TEST: Failed tor request bluetooth module skipping test...\n");
+		return -1;
+	}
+
+
 	ret = test_bluetooth_scan();
 	CHECK_RET(ret);
 
@@ -366,5 +355,6 @@ int main(int argc, char *argv[])
 	CHECK_RET(ret);
 
 exit:
+	artik_release_api_module(bt);
 	return (ret == S_OK) ? 0 : -1;
 }

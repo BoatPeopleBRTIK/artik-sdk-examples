@@ -34,10 +34,7 @@
 #define STR_DIMMABLE_LIGHT			"DIMMABLE_LIGHT"
 #define STR_LEVEL_CONTROL_SWITCH	"LEVEL_CONTROL_SWITCH"
 
-static struct zigbee_network_info saved_network_info;
-
-/* TODO: this is used to check all device information for debugging only */
-extern struct zigbee_device_info *get_device_info(void);
+static artik_zigbee_network_info saved_network_info;
 
 static void _print_prompt(void)
 {
@@ -62,13 +59,13 @@ static void _usage_print(void)
 
 static void _release_network_info(void)
 {
-	memset(&saved_network_info, 0, sizeof(struct zigbee_network_info));
+	memset(&saved_network_info, 0, sizeof(artik_zigbee_network_info));
 }
 
-static void _save_network_info(const struct zigbee_network_info *network_info)
+static void _save_network_info(const artik_zigbee_network_info *network_info)
 {
 	if (saved_network_info.channel != 0) {
-		warn("saved network info is waiting for user action!");
+		log_warn("saved network info is waiting for user action!");
 		return;
 	}
 	saved_network_info.channel = network_info->channel;
@@ -78,7 +75,7 @@ static void _save_network_info(const struct zigbee_network_info *network_info)
 
 static void _check_saved_network(char command)
 {
-	enum zigbee_notification result;
+	artik_zigbee_notification result;
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 
 	if (saved_network_info.channel != 0) {
@@ -87,7 +84,7 @@ static void _check_saved_network(char command)
 		case 'y':
 			result = zb->network_join_manually(&saved_network_info);
 			if (result != ZIGBEE_CMD_SUCCESS) {
-				warn("In callback, zigbee_network_join failed:%d", result);
+				log_warn("In callback, zigbee_network_join failed:%d", result);
 				return;
 			}
 			break;
@@ -99,7 +96,7 @@ static void _check_saved_network(char command)
 
 static void _network_leave(void)
 {
-	enum zigbee_notification result;
+	artik_zigbee_notification result;
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 
 	result = zb->network_leave();
@@ -110,11 +107,11 @@ static void _network_leave(void)
 
 static void _do_manual_form_join_request(void)
 {
-	enum zigbee_notification result;
-	struct zigbee_network_info network_info;
+	artik_zigbee_notification result;
+	artik_zigbee_network_info network_info;
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 
-	dbg("Manual form %d %d 0x%4X", MANUAL_TEST_CHANNEL, MANUAL_TEST_TX_POWER, MANUAL_TEST_PANID1);
+	log_dbg("Manual form %d %d 0x%4X", MANUAL_TEST_CHANNEL, MANUAL_TEST_TX_POWER, MANUAL_TEST_PANID1);
 	network_info.channel = MANUAL_TEST_CHANNEL;
 	network_info.tx_power = MANUAL_TEST_TX_POWER;
 	network_info.pan_id = MANUAL_TEST_PANID1;
@@ -122,27 +119,27 @@ static void _do_manual_form_join_request(void)
 	result = zb->network_form_manually(&network_info);
 
 	if (result == ZIGBEE_CMD_SUCCESS)
-		dbg("Succeeded");
+		log_dbg("Succeeded");
 	else
-		warn("Failed to form network manually");
+		log_warn("Failed to form network manually");
 	sleep(2);
 
-	dbg("Leaving from the network");
+	log_dbg("Leaving from the network");
 	result = zb->network_leave();
 	if (result == ZIGBEE_CMD_SUCCESS)
-		dbg("Succeeded");
+		log_dbg("Succeeded");
 	else
-		warn("Failed to leave from the network");
+		log_warn("Failed to leave from the network");
 	sleep(2);
 
-	dbg("Manual join %d %d 0x%4X", MANUAL_TEST_CHANNEL, MANUAL_TEST_TX_POWER,
+	log_dbg("Manual join %d %d 0x%4X", MANUAL_TEST_CHANNEL, MANUAL_TEST_TX_POWER,
 															MANUAL_TEST_PANID2);
 	network_info.pan_id = MANUAL_TEST_PANID2;
 	result = zb->network_join_manually(&network_info);
 	if (result == ZIGBEE_CMD_SUCCESS)
-		dbg("Succeeded");
+		log_dbg("Succeeded");
 	else
-		warn("Failed to join network manually");
+		log_warn("Failed to join network manually");
 
 	artik_release_api_module(zb);
 }
@@ -150,9 +147,9 @@ static void _do_manual_form_join_request(void)
 static void _do_easy_device_onoff(void)
 {
 	int i;
-	enum zigbee_notification result;
-	struct zigbee_endpoint *endpoint;
-	struct zigbee_endpoint_list endpointList;
+	artik_zigbee_notification result;
+	artik_zigbee_endpoint *endpoint;
+	artik_zigbee_endpoint_list endpointList;
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 
 	zb->device_find_by_cluster(&endpointList, ZCL_ON_OFF_CLUSTER_ID, 1);
@@ -192,33 +189,33 @@ static void _do_easy_identify_request(void)
 {
 	int i, j;
 	int remained_time;
-	enum zigbee_notification result;
-	struct zigbee_endpoint *endpoint;
-	struct zigbee_endpoint_list endpointList;
+	artik_zigbee_notification result;
+	artik_zigbee_endpoint *endpoint;
+	artik_zigbee_endpoint_list endpointList;
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 
 	zb->device_find_by_cluster(&endpointList, ZCL_IDENTIFY_CLUSTER_ID, 1);
 	if (endpointList.num == 0)
-		warn("there is no endpoint to send identify command");
+		log_warn("there is no endpoint to send identify command");
 	else {
-		dbg("found %d endpoints to request identify command",
+		log_dbg("found %d endpoints to request identify command",
 															endpointList.num);
 		for (i = 0; i < endpointList.num; i++) {
 			endpoint = &endpointList.endpoint[i];
 			result = zb->identify_request(endpoint,	EASY_IDENTIFY_DURATION + i);
 			if (result != ZIGBEE_CMD_SUCCESS)
-				warn("failed to send command: %d", result);
+				log_warn("failed to send command: %d", result);
 			else
-				dbg("In do_easy_identify_request, sent");
+				log_dbg("In do_easy_identify_request, sent");
 			sleep((int)((EASY_IDENTIFY_DURATION + i) / 2));
 
 			for (j = 0; j < (EASY_IDENTIFY_DURATION + i) / 2; j++) {
 				remained_time = zb->identify_get_remaining_time(endpoint);
 				if (remained_time < 0) {
-					warn("failed to get remaining time!");
+					log_warn("failed to get remaining time!");
 					break;
 				}
-				info("In do_easy_identify_request, remained time %d",
+				log_info("In do_easy_identify_request, remained time %d",
 																remained_time);
 				if (remained_time == 0)
 					break;
@@ -233,21 +230,21 @@ static void _do_easy_identify_request(void)
 static void _do_easy_device_level_control_request(int with_onoff)
 {
 	int i;
-	enum zigbee_notification result;
-	struct zigbee_endpoint *endpoint;
-	struct zigbee_endpoint_list endpointList;
-	struct zigbee_level_control_command level_control_cmd = {0x0,};
+	artik_zigbee_notification result;
+	artik_zigbee_endpoint *endpoint;
+	artik_zigbee_endpoint_list endpointList;
+	artik_zigbee_level_control_command level_control_cmd = {0x0,};
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 
 	zb->device_find_by_cluster(&endpointList, ZCL_LEVEL_CONTROL_CLUSTER_ID, 1);
 	if (endpointList.num == 0)
-		warn("there is no endpoint to send level control command");
+		log_warn("there is no endpoint to send level control command");
 	else {
-		dbg("found %d endpoints to request level control command",
+		log_dbg("found %d endpoints to request level control command",
 															endpointList.num);
 		for (i = 0; i < endpointList.num; i++) {
 			endpoint = &endpointList.endpoint[i];
-			info("sending command to device 0x%4x, endpoint %d",
+			log_info("sending command to device 0x%4x, endpoint %d",
 								endpoint->device_id, endpoint->endpoint_id);
 
 			level_control_cmd.control_type =
@@ -258,14 +255,14 @@ static void _do_easy_device_level_control_request(int with_onoff)
 			result = zb->level_control_request(endpoint,
 														&level_control_cmd);
 			if (result != ZIGBEE_CMD_SUCCESS)
-				warn("failed to send command: %d", result);
+				log_warn("failed to send command: %d", result);
 			else
-				dbg("In _do_easy_device_level_control_request, sent");
+				log_dbg("In _do_easy_device_level_control_request, sent");
 
 			sleep(2);
 
 			level_control_cmd.control_type =
-								with_onoff ? ZIGBEE_MOVE_ONOFF: ZIGBEE_MOVE;
+								with_onoff ? ZIGBEE_MOVE_ONOFF : ZIGBEE_MOVE;
 			level_control_cmd.parameters.move.control_mode =
 													ZIGBEE_LEVEL_CONTROL_UP;
 			level_control_cmd.parameters.move.rate = 5;
@@ -273,14 +270,14 @@ static void _do_easy_device_level_control_request(int with_onoff)
 			result = zb->level_control_request(endpoint,
 														&level_control_cmd);
 			if (result != ZIGBEE_CMD_SUCCESS)
-				warn("failed to send command: %d", result);
+				log_warn("failed to send command: %d", result);
 			else
-				dbg("In _do_easy_device_level_control_request, sent");
+				log_dbg("In _do_easy_device_level_control_request, sent");
 
 			sleep(2);
 
 			level_control_cmd.control_type =
-								with_onoff ? ZIGBEE_STEP_ONOFF: ZIGBEE_STEP;
+								with_onoff ? ZIGBEE_STEP_ONOFF : ZIGBEE_STEP;
 			level_control_cmd.parameters.step.control_mode =
 													ZIGBEE_LEVEL_CONTROL_DOWN;
 			level_control_cmd.parameters.step.step_size = 1;
@@ -289,20 +286,20 @@ static void _do_easy_device_level_control_request(int with_onoff)
 			result = zb->level_control_request(endpoint,
 														&level_control_cmd);
 			if (result != ZIGBEE_CMD_SUCCESS)
-				warn("failed to send command: %d", result);
+				log_warn("failed to send command: %d", result);
 			else
-				dbg("In _do_easy_device_level_control_request, sent");
+				log_dbg("In _do_easy_device_level_control_request, sent");
 
 			sleep(2);
 
 			level_control_cmd.control_type =
-								with_onoff ? ZIGBEE_STOP_ONOFF: ZIGBEE_STOP;
+								with_onoff ? ZIGBEE_STOP_ONOFF : ZIGBEE_STOP;
 			result = zb->level_control_request(endpoint,
 														&level_control_cmd);
 			if (result != ZIGBEE_CMD_SUCCESS)
-				warn("failed to send command: %d", result);
+				log_warn("failed to send command: %d", result);
 			else
-				dbg("In _do_easy_device_level_control_request, sent");
+				log_dbg("In _do_easy_device_level_control_request, sent");
 
 			sleep(2);
 		}
@@ -311,10 +308,10 @@ static void _do_easy_device_level_control_request(int with_onoff)
 	artik_release_api_module(zb);
 }
 
-static void _print_device_info(struct zigbee_device_info *device_info)
+static void _print_device_info(artik_zigbee_device_info *device_info)
 {
 	int i, j, k;
-	struct zigbee_device *device = NULL;
+	artik_zigbee_device *device = NULL;
 
 	if (device_info) {
 		fprintf(stdout, "device count %d\n", device_info->num);
@@ -339,12 +336,12 @@ static void _print_device_info(struct zigbee_device_info *device_info)
 
 void _callback(void *data, void *user_data)
 {
-	struct zigbee_response *response = (struct zigbee_response *)data;
-	struct zigbee_network_info *network_info = NULL;
-	struct zigbee_onoff_info *onoff_info = NULL;
-	struct zigbee_groups_info *group_info = NULL;
-	struct zigbee_level_control_command *level_command = NULL;
-	struct zigbee_level_control_update *level_update = NULL;
+	artik_zigbee_response *response = (artik_zigbee_response *)data;
+	artik_zigbee_network_info *network_info = NULL;
+	artik_zigbee_onoff_info *onoff_info = NULL;
+	artik_zigbee_groups_info *group_info = NULL;
+	artik_zigbee_level_control_command *level_command = NULL;
+	artik_zigbee_level_control_update *level_update = NULL;
 	int result;
 	int onoff_result = ZIGBEE_ONOFF_OFF;
 	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
@@ -407,20 +404,20 @@ void _callback(void *data, void *user_data)
 		}
 		break;
 	case ZIGBEE_RESPONSE_NETWORK_SCAN_RESULT:
-		network_info = (struct zigbee_network_info *)response->payload;
+		network_info = (artik_zigbee_network_info *)response->payload;
 		if (!network_info)
 			return;
-		info("Scan result- channel %d, tx power %d, pan id 0x%4X",
+		log_info("Scan result- channel %d, tx power %d, pan id 0x%4X",
 		network_info->channel, network_info->tx_power, network_info->pan_id);
 		_save_network_info(network_info);
-		info("Will you join? [y/n]");
+		log_info("Will you join? [y/n]");
 		break;
 	case ZIGBEE_RESPONSE_DEVICE_INFO:
 		fprintf(stdout, "Received new device information\n");
-		_print_device_info((struct zigbee_device_info *)response->payload);
+		_print_device_info((artik_zigbee_device_info *)response->payload);
 		break;
 	case ZIGBEE_RESPONSE_ONOFF_COMMAND:
-		onoff_info = (struct zigbee_onoff_info *)response->payload;
+		onoff_info = (artik_zigbee_onoff_info *)response->payload;
 		if (!onoff_info)
 			return;
 		fprintf(stdout, "ZIGBEE ONOFF endpoint [%d] command [%d]: [%d] -> [%d]\n", onoff_info->endpoint_id, onoff_info->command, onoff_info->prev_value, onoff_info->curr_value);
@@ -433,72 +430,73 @@ void _callback(void *data, void *user_data)
 			fprintf(stdout, "ZIGBEE ONOFF Get Value [ERR]\n");
 		break;
 	case ZIGBEE_RESPONSE_GROUPS_INFO:
-		group_info = (struct zigbee_groups_info *)response->payload;
+		group_info = (artik_zigbee_groups_info *)response->payload;
 		if (!group_info)
 			return;
-		info("ZIGBEE_RESPONSE_GROUPS_INFO group ID [%d] group cmd [%d]",
+		log_info("ZIGBEE_RESPONSE_GROUPS_INFO group ID [%d] group cmd [%d]",
 								group_info->group_id, group_info->group_cmd);
 		if (group_info->group_cmd == ZIGBEE_GROUPS_ADD_IF_IDENTIFYING)
-			info("ZIGBEE_GROUPS_ADD_IF_IDENTIFYING");
+			log_info("ZIGBEE_GROUPS_ADD_IF_IDENTIFYING");
 
 		if (zb->groups_name_support(group_info->endpoint_id))
-			info("ZIGBEE_GROUPS : name supported");
+			log_info("ZIGBEE_GROUPS : name supported");
 		else
-			info("ZIGBEE_GROUPS : name not supported");
+			log_info("ZIGBEE_GROUPS : name not supported");
 		break;
 	case ZIGBEE_RESPONSE_LEVEL_CONTROL_COMMAND:
-		level_command = (struct zigbee_level_control_command *)response->payload;
+		level_command = (artik_zigbee_level_control_command *)response->payload;
 		if (!level_command)
 			return;
-		switch(level_command->control_type) {
+		switch (level_command->control_type) {
 		case ZIGBEE_MOVE_TO_LEVEL:
-			info("Move to level, level %d, transition time %dms",
+			log_info("Move to level, level %d, transition time %dms",
 					level_command->parameters.move_to_level.level,
 					level_command->parameters.move_to_level.transition_time);
 			break;
 		case ZIGBEE_MOVE:
-			info("Move, mode %d, rate %d",
+			log_info("Move, mode %d, rate %d",
 					level_command->parameters.move.control_mode,
 					level_command->parameters.move.rate);
 			break;
 		case ZIGBEE_STEP:
-			info("Step, mode %d, step size %d, transition time %dms",
+			log_info("Step, mode %d, step size %d, transition time %dms",
 					level_command->parameters.step.control_mode,
 					level_command->parameters.step.step_size,
 					level_command->parameters.step.transition_time);
 			break;
 		case ZIGBEE_STOP:
-			info("Stop");
+			log_info("Stop");
 			break;
 		case ZIGBEE_MOVE_TO_LEVEL_ONOFF:
-			info("Move to level(on/off), level %d, transition time %dms",
+			log_info("Move to level(on/off), level %d, transition time %dms",
 					level_command->parameters.move_to_level.level,
 					level_command->parameters.move_to_level.transition_time);
 			break;
 		case ZIGBEE_MOVE_ONOFF:
-			info("Move(on/off), mode %d, rate %d",
+			log_info("Move(on/off), mode %d, rate %d",
 					level_command->parameters.move.control_mode,
 					level_command->parameters.move.rate);
 			break;
 		case ZIGBEE_STEP_ONOFF:
-			info("Step(on/off), mode %d, step size %d, transition time %dms",
+			log_info("Step(on/off), mode %d, step size %d, transition time %dms",
 					level_command->parameters.step.control_mode,
 					level_command->parameters.step.step_size,
 					level_command->parameters.step.transition_time);
 			break;
 		case ZIGBEE_STOP_ONOFF:
-			info("Stop(on/off)");
+			log_info("Stop(on/off)");
 			break;
-		default: break;
+		default:
+			break;
 		}
 		break;
 	case ZIGBEE_RESPONSE_LEVEL_CONTROL_UPDATE:
-		level_update = (struct zigbee_level_control_update *)response->payload;
-		info("Current level update from %d to %d", level_update->prev_level,
+		level_update = (artik_zigbee_level_control_update *)response->payload;
+		log_info("Current level update from %d to %d", level_update->prev_level,
 				level_update->curr_level);
 
 		result = zb->level_control_get_value(level_update->endpoint_id);
-		info("Double check of Current Level: %d", result);
+		log_info("Double check of Current Level: %d", result);
 		break;
 	default:
 		break;
@@ -582,8 +580,9 @@ static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 	if (fgets(command, KEYBOARD_INPUT_SIZE, stdin) == NULL)
 		return 1;
 
-	if ((line_p = strchr(command, '\n')) != NULL)
-		*line_p ='\0';
+	line_p = strchr(command, '\n');
+	if (line_p != NULL)
+		*line_p = '\0';
 
 	if (strlen(command) < 1) {
 		_print_prompt();
@@ -613,24 +612,24 @@ static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 		break;
 	case '5':
 		zb->device_discover();
-		dbg("Wait for response");
+		log_dbg("Wait for response");
 		break;
 	case '6':
 		_do_easy_device_onoff();
-		dbg("Done");
+		log_dbg("Done");
 		break;
 	case '7':
 		_do_easy_identify_request();
-		dbg("Done");
+		log_dbg("Done");
 		break;
 	case '8':
 		_do_manual_form_join_request();
-		dbg("Done");
+		log_dbg("Done");
 		break;
 	case '9':
 		_do_easy_device_level_control_request(0);
 		_do_easy_device_level_control_request(1);
-		dbg("Done");
+		log_dbg("Done");
 		break;
 	case 'q':
 		loop->quit();
@@ -641,7 +640,7 @@ static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 	case 'n':
 	case 'N':
 		_check_saved_network(command[0]);
-		dbg("Done");
+		log_dbg("Done");
 		break;
 	default:
 		break;

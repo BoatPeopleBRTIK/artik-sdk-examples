@@ -20,17 +20,17 @@
 
 void _callback(void *data, void *user_data)
 {
-	struct zigbee_response *response = (struct zigbee_response *)data;
+	artik_zigbee_response *response = (artik_zigbee_response *)data;
 	int result;
 
-	dbg("In callback, response type : %d", response->type);
+	log_dbg("In callback, response type : %d", response->type);
 
 	switch (response->type) {
 	case ZIGBEE_RESPONSE_NOTIFICATION:
 		result = (int)strtol(response->payload, NULL, 10);
 		switch (result) {
 		case ZIGBEE_CMD_SUCCESS:
-			info("In callback, ZIGBEE_CMD_SUCCESS");
+			log_info("In callback, ZIGBEE_CMD_SUCCESS");
 			break;
 		case ZIGBEE_CMD_ERR_PORT_PROBLEM:
 		case ZIGBEE_CMD_ERR_NO_SUCH_COMMAND:
@@ -40,13 +40,13 @@ void _callback(void *data, void *user_data)
 		case ZIGBEE_CMD_ERR_STRING_TOO_LONG:
 		case ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
 		case ZIGBEE_CMD_ERR:
-			err("In callback, COMMAND ERROR(%d)!", result);
+			log_err("In callback, COMMAND ERROR(%d)!", result);
 			break;
 		case ZIGBEE_NO_MESSAGE:
-			warn("In callback, ZIGBEE_NO_MESSAGE");
+			log_warn("In callback, ZIGBEE_NO_MESSAGE");
 			break;
 		default:
-			dbg("In callback, response %d", result);
+			log_dbg("In callback, response %d", result);
 			break;
 		}
 		break;
@@ -54,26 +54,26 @@ void _callback(void *data, void *user_data)
 		result = (int)strtol(response->payload, NULL, 10);
 		switch (result) {
 		case ZIGBEE_NETWORK_JOIN:
-			info("In callback, ZIGBEE_NETWORK_JOIN");
+			log_info("In callback, ZIGBEE_NETWORK_JOIN");
 			break;
 		case ZIGBEE_NETWORK_LEAVE:
-			info("In callback, ZIGBEE_NETWORK_LEAVE");
+			log_info("In callback, ZIGBEE_NETWORK_LEAVE");
 			break;
 		case ZIGBEE_NETWORK_FIND_JOIN:
-			info("In callback, ZIGBEE_NETWORK_FIND_JOIN");
+			log_info("In callback, ZIGBEE_NETWORK_FIND_JOIN");
 			break;
 		case ZIGBEE_NETWORK_FIND_JOIN_FAILED:
-			warn("In callback, ZIGBEE_NETWORK_FIND_JOIN_FAILED");
+			log_warn("In callback, ZIGBEE_NETWORK_FIND_JOIN_FAILED");
 			break;
 		default:
-			dbg("In callback, response %d", result);
+			log_dbg("In callback, response %d", result);
 			break;
 		}
 		break;
 	default:
 		break;
 	}
-	dbg("callback end");
+	log_dbg("callback end");
 }
 
 static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
@@ -113,19 +113,19 @@ static void _print_network_status(int network_state)
 {
 	switch (network_state) {
 	case ZIGBEE_NO_NETWORK:
-		info("state ZIGBEE_NO_NETWORK");
+		log_info("state ZIGBEE_NO_NETWORK");
 		break;
 	case ZIGBEE_JOINING_NETWORK:
-		info("state ZIGBEE_JOINING_NETWORK");
+		log_info("state ZIGBEE_JOINING_NETWORK");
 		break;
 	case ZIGBEE_JOINED_NETWORK:
-		info("state ZIGBEE_JOINED_NETWORK");
+		log_info("state ZIGBEE_JOINED_NETWORK");
 		break;
 	case ZIGBEE_JOINED_NETWORK_NO_PARENT:
-		info("state ZIGBEE_JOINED_NETWORK_NO_PARENT");
+		log_info("state ZIGBEE_JOINED_NETWORK_NO_PARENT");
 		break;
 	case ZIGBEE_LEAVING_NETWORK:
-		info("state ZIGBEE_LEAVING_NETWORK");
+		log_info("state ZIGBEE_LEAVING_NETWORK");
 		break;
 	default:
 		break;
@@ -136,19 +136,19 @@ static void _print_node_type(int node_type)
 {
 	switch (node_type) {
 	case ZIGBEE_UNKNOWN_DEVICE:
-		info("node type ZIGBEE_UNKNOWN_DEVICE");
+		log_info("node type ZIGBEE_UNKNOWN_DEVICE");
 		break;
 	case ZIGBEE_COORDINATOR:
-		info("node type ZIGBEE_COORDINATOR");
+		log_info("node type ZIGBEE_COORDINATOR");
 		break;
 	case ZIGBEE_ROUTER:
-		info("node type ZIGBEE_ROUTER");
+		log_info("node type ZIGBEE_ROUTER");
 		break;
 	case ZIGBEE_END_DEVICE:
-		info("node type ZIGBEE_END_DEVICE");
+		log_info("node type ZIGBEE_END_DEVICE");
 		break;
 	case ZIGBEE_SLEEPY_END_DEVICE:
-		info("node type ZIGBEE_SLEEPY_END_DEVICE");
+		log_info("node type ZIGBEE_SLEEPY_END_DEVICE");
 		break;
 	}
 }
@@ -169,22 +169,22 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	dbg("Start zigbee cli program");
+	log_dbg("Start zigbee cli program");
 
 	if (argc == 1) {
-		err("Usage: zigbee_cli [DEVICE TYPE] ...");
+		log_err("Usage: zigbee_cli [DEVICE TYPE] ...");
 		return 0;
 	}
 
 	if (argc > 1) {
 		if (argc > MAX_ENDPOINT_SIZE + 1)
-			warn("only %d device type is supported currently!",
+			log_warn("only %d device type is supported currently!",
 															MAX_ENDPOINT_SIZE);
 		for (i = 1; i < argc && i < MAX_ENDPOINT_SIZE + 1; i++) {
-			info("Device type is %s", argv[i]);
+			log_info("Device type is %s", argv[i]);
 			deviceId = _get_device_id(argv[i]);
 			if (deviceId == -1)
-				warn("not supported device type!!");
+				log_warn("not supported device type!!");
 			else
 				device_list[count++] = deviceId;
 		}
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 			_print_network_status(zb->network_request_my_network_status());
 			_print_node_type(zb->device_request_my_node_type());
 	} else
-		dbg("Privious Network : Non Exist");
+		log_dbg("Privious Network : Non Exist");
 
 	loop->add_fd_watch(STDIN_FILENO, (WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP | WATCH_IO_NVAL), _on_keyboard_received, NULL, NULL);
 
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 	artik_release_api_module(loop);
 	artik_release_api_module(zb);
 
-	dbg("Stop zigbee cli program");
+	log_dbg("Stop zigbee cli program");
 
 	return (ret == S_OK) ? 0 : -1;
 }
