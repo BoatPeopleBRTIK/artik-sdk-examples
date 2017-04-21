@@ -57,7 +57,7 @@ void websocket_receive_callback(void *user_data, void *result)
 	free(result);
 }
 
-static artik_error test_websocket_read(int timeout_ms)
+static artik_error test_websocket_read(int timeout_ms, bool enable_sdr)
 {
 	artik_error ret = S_OK;
 	artik_cloud_module *cloud = (artik_cloud_module *)artik_request_api_module("cloud");
@@ -67,7 +67,7 @@ static artik_error test_websocket_read(int timeout_ms)
 	int timeout_id = 0;
 
 	/* Open websocket to ARTIK Cloud and register device to receive messages from cloud */
-	ret = cloud->websocket_open_stream(&handle, access_token, device_id, false);
+	ret = cloud->websocket_open_stream(&handle, access_token, device_id, enable_sdr);
 	if (ret != S_OK) {
 		fprintf(stderr, "TEST failed, could not open Websocket (%d)\n", ret);
 		return ret;
@@ -94,7 +94,7 @@ static artik_error test_websocket_read(int timeout_ms)
 	return ret;
 }
 
-static artik_error test_websocket_write(int timeout_ms)
+static artik_error test_websocket_write(int timeout_ms, bool enable_sdr)
 {
 	artik_error ret = S_OK;
 	artik_cloud_module *cloud = (artik_cloud_module *)artik_request_api_module("cloud");
@@ -105,7 +105,7 @@ static artik_error test_websocket_write(int timeout_ms)
 	int write_periodic_id = 0;
 
 	/* Open websocket to ARTIK Cloud and register device to receive message from cloud */
-	ret = cloud->websocket_open_stream(&handle, access_token, device_id, false);
+	ret = cloud->websocket_open_stream(&handle, access_token, device_id, enable_sdr);
 	if (ret != S_OK) {
 		fprintf(stderr, "TEST failed, could not open Websocket (%d)\n", ret);
 		goto exit;
@@ -148,8 +148,9 @@ int main(int argc, char *argv[])
 {
 	int opt;
 	artik_error ret = S_OK;
+	bool enable_sdr = false;
 
-	while ((opt = getopt(argc, argv, "t:d:m:")) != -1) {
+	while ((opt = getopt(argc, argv, "t:d:m:s")) != -1) {
 		switch (opt) {
 		case 't':
 			strncpy(access_token, optarg, MAX_PARAM_LEN);
@@ -160,16 +161,19 @@ int main(int argc, char *argv[])
 		case 'm':
 			test_message = strndup(optarg, strlen(optarg));
 			break;
+		case 's':
+			enable_sdr = true;
+			break;
 		default:
-			printf("Usage: websocket-test [-t <access token>] [-d <device id>] [-m <JSON type test message>] \r\n");
+			printf("Usage: websocket-test [-t <access token>] [-d <device id>] [-m <JSON type test message>] [-s for enabling SDR (Secure Device Registered) test]\r\n");
 			return 0;
 		}
 	}
 
-	ret = test_websocket_write(TEST_TIMEOUT_MS);
+	ret = test_websocket_write(TEST_TIMEOUT_MS, enable_sdr);
 	CHECK_RET(ret);
 
-	ret = test_websocket_read(TEST_TIMEOUT_MS);
+	ret = test_websocket_read(TEST_TIMEOUT_MS, enable_sdr);
 	CHECK_RET(ret);
 
 exit:

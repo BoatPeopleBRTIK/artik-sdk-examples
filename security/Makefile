@@ -1,11 +1,11 @@
-EXE_NAME := mqtt-test
+EXE_NAME := security-test
 
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
-	libartik-sdk-mqtt
+	libartik-sdk-connectivity
 
 OBJS := \
-	artik_mqtt_cloud_test.o \
+	artik_security_test.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT

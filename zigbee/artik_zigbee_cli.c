@@ -15,20 +15,31 @@
 #define STR_ON_OFF_LIGHT			"ON_OFF_LIGHT"
 #define STR_DIMMABLE_LIGHT			"DIMMABLE_LIGHT"
 #define STR_LEVEL_CONTROL_SWITCH	"LEVEL_CONTROL_SWITCH"
+#define STR_COLOR_DIMMABLE_LIGHT	"COLOR_DIMMABLE_LIGHT"
+#define STR_ON_OFF_LIGHT_SWITCH		"ON_OFF_LIGHT_SWITCH"
+#define STR_DIMMER_SWITCH			"DIMMER_SWITCH"
+#define STR_COLOR_DIMMER_SWITCH		"COLOR_DIMMER_SWITCH"
+#define STR_LIGHT_SENSOR			"LIGHT_SENSOR"
+#define STR_OCCUPANCY_SENSOR		"OCCUPANCY_SENSOR"
+#define STR_HEATING_COOLING_UNIT	"HEATING_COOLING_UNIT"
+#define STR_THERMOSTAT				"THERMOSTAT"
+#define STR_TEMPERATURE_SENSOR		"TEMPERATURE_SENSOR"
+#define STR_REMOTE_CONTROL			"REMOTE_CONTROL"
 
 #define KEYBOARD_INPUT_SIZE			100
 
-void _callback(void *data, void *user_data)
+void _callback(void *user_data, artik_zigbee_response_type response_type,
+			   void *payload)
 {
-	artik_zigbee_response *response = (artik_zigbee_response *)data;
-	int result;
+	artik_zigbee_notification notification;
+	artik_zigbee_network_notification network_notification;
 
-	log_dbg("In callback, response type : %d", response->type);
+	log_dbg("In callback, response type : %d", response_type);
 
-	switch (response->type) {
+	switch (response_type) {
 	case ZIGBEE_RESPONSE_NOTIFICATION:
-		result = (int)strtol(response->payload, NULL, 10);
-		switch (result) {
+		notification = *((artik_zigbee_notification *) payload);
+		switch (notification) {
 		case ZIGBEE_CMD_SUCCESS:
 			log_info("In callback, ZIGBEE_CMD_SUCCESS");
 			break;
@@ -40,33 +51,30 @@ void _callback(void *data, void *user_data)
 		case ZIGBEE_CMD_ERR_STRING_TOO_LONG:
 		case ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
 		case ZIGBEE_CMD_ERR:
-			log_err("In callback, COMMAND ERROR(%d)!", result);
-			break;
-		case ZIGBEE_NO_MESSAGE:
-			log_warn("In callback, ZIGBEE_NO_MESSAGE");
+			log_err("In callback, COMMAND ERROR(%d)!", notification);
 			break;
 		default:
-			log_dbg("In callback, response %d", result);
+			log_dbg("In callback, response %d", notification);
 			break;
 		}
 		break;
 	case ZIGBEE_RESPONSE_NETWORK_NOTIFICATION:
-		result = (int)strtol(response->payload, NULL, 10);
-		switch (result) {
+		network_notification = *((artik_zigbee_network_notification *) payload);
+		switch (network_notification) {
 		case ZIGBEE_NETWORK_JOIN:
 			log_info("In callback, ZIGBEE_NETWORK_JOIN");
 			break;
 		case ZIGBEE_NETWORK_LEAVE:
 			log_info("In callback, ZIGBEE_NETWORK_LEAVE");
 			break;
-		case ZIGBEE_NETWORK_FIND_JOIN:
-			log_info("In callback, ZIGBEE_NETWORK_FIND_JOIN");
+		case ZIGBEE_NETWORK_FIND_JOIN_SUCCESS:
+			log_info("In callback, ZIGBEE_NETWORK_FIND_JOIN_SUCCESS");
 			break;
 		case ZIGBEE_NETWORK_FIND_JOIN_FAILED:
 			log_warn("In callback, ZIGBEE_NETWORK_FIND_JOIN_FAILED");
 			break;
 		default:
-			log_dbg("In callback, response %d", result);
+			log_dbg("In callback, response %d", network_notification);
 			break;
 		}
 		break;
@@ -95,18 +103,58 @@ static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 	return 1;
 }
 
-static int _get_device_id(const char *str_device_id)
+static artik_error _get_device_id(artik_zigbee_module *zb,
+								  const char *str_device_id,
+								  artik_zigbee_endpoint_handle *handle)
 {
+	artik_error result;
+
 	if (!strcmp(str_device_id, STR_ON_OFF_SWITCH))
-		return DEVICE_ON_OFF_SWITCH;
+		result = zb->get_device(1, ZIGBEE_PROFILE_HA,
+								DEVICE_ON_OFF_SWITCH, handle);
 	else if (!strcmp(str_device_id, STR_ON_OFF_LIGHT))
-		return DEVICE_ON_OFF_LIGHT;
+		result = zb->get_device(19, ZIGBEE_PROFILE_HA,
+								DEVICE_ON_OFF_LIGHT, handle);
 	else if (!strcmp(str_device_id, STR_DIMMABLE_LIGHT))
-		return DEVICE_DIMMABLE_LIGHT;
+		result = zb->get_device(20, ZIGBEE_PROFILE_HA,
+								DEVICE_DIMMABLE_LIGHT, handle);
 	else if (!strcmp(str_device_id, STR_LEVEL_CONTROL_SWITCH))
-		return DEVICE_LEVEL_CONTROL_SWITCH;
+		result = zb->get_device(2, ZIGBEE_PROFILE_HA,
+								DEVICE_LEVEL_CONTROL_SWITCH, handle);
+	else if (!strcmp(str_device_id, STR_COLOR_DIMMABLE_LIGHT))
+		result = zb->get_device(21, ZIGBEE_PROFILE_HA,
+								DEVICE_COLOR_DIMMABLE_LIGHT, handle);
+	else if (!strcmp(str_device_id, STR_ON_OFF_LIGHT_SWITCH))
+		result = zb->get_device(22, ZIGBEE_PROFILE_HA,
+								DEVICE_ON_OFF_LIGHT_SWITCH, handle);
+	else if (!strcmp(str_device_id, STR_DIMMER_SWITCH))
+		result = zb->get_device(23, ZIGBEE_PROFILE_HA,
+								DEVICE_DIMMER_SWITCH, handle);
+	else if (!strcmp(str_device_id, STR_COLOR_DIMMER_SWITCH))
+		result = zb->get_device(24, ZIGBEE_PROFILE_HA,
+								DEVICE_COLOR_DIMMER_SWITCH, handle);
+	else if (!strcmp(str_device_id, STR_LIGHT_SENSOR))
+		result = zb->get_device(25, ZIGBEE_PROFILE_HA,
+								DEVICE_LIGHT_SENSOR, handle);
+	else if (!strcmp(str_device_id, STR_OCCUPANCY_SENSOR))
+		result = zb->get_device(26, ZIGBEE_PROFILE_HA,
+								DEVICE_OCCUPANCY_SENSOR, handle);
+	else if (!strcmp(str_device_id, STR_HEATING_COOLING_UNIT))
+		result = zb->get_device(31, ZIGBEE_PROFILE_HA,
+								DEVICE_HEATING_COOLING_UNIT, handle);
+	else if (!strcmp(str_device_id, STR_THERMOSTAT))
+		result = zb->get_device(32, ZIGBEE_PROFILE_HA,
+								DEVICE_THERMOSTAT, handle);
+	else if (!strcmp(str_device_id, STR_TEMPERATURE_SENSOR))
+		result = zb->get_device(33, ZIGBEE_PROFILE_HA,
+								DEVICE_TEMPERATURE_SENSOR, handle);
+	else if (!strcmp(str_device_id, STR_REMOTE_CONTROL))
+		result = zb->get_device(34, ZIGBEE_PROFILE_HA,
+								DEVICE_REMOTE_CONTROL, handle);
 	else
-		return -1;
+		return E_BAD_ARGS;
+
+	return result;
 }
 
 static void _print_network_status(int network_state)
@@ -156,9 +204,10 @@ static void _print_node_type(int node_type)
 int main(int argc, char *argv[])
 {
 	artik_error ret = S_OK;
-	int deviceId = -1;
 	int i;
-	int device_list[MAX_ENDPOINT_SIZE];
+	artik_zigbee_endpoint_handle device_list[MAX_ENDPOINT_SIZE];
+	artik_zigbee_network_state state;
+	artik_zigbee_node_type type;
 	int count = 0;
 
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
@@ -182,11 +231,11 @@ int main(int argc, char *argv[])
 															MAX_ENDPOINT_SIZE);
 		for (i = 1; i < argc && i < MAX_ENDPOINT_SIZE + 1; i++) {
 			log_info("Device type is %s", argv[i]);
-			deviceId = _get_device_id(argv[i]);
-			if (deviceId == -1)
+			ret = _get_device_id(zb, argv[i], &device_list[count]);
+			if (ret != S_OK)
 				log_warn("not supported device type!!");
 			else
-				device_list[count++] = deviceId;
+				count++;
 		}
 
 		if (count == 0)
@@ -202,15 +251,27 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (zb->network_start() == ZIGBEE_JOINED_NETWORK) {
-			_print_network_status(zb->network_request_my_network_status());
-			_print_node_type(zb->device_request_my_node_type());
+	if (zb->network_start(NULL) == ZIGBEE_JOINED_NETWORK) {
+		ret = zb->network_request_my_network_status(&state);
+		if (ret == S_OK)
+			_print_network_status(state);
+		else
+			log_err("get network status failed: %s", error_msg(ret));
+		ret = zb->device_request_my_node_type(&type);
+		if (ret == S_OK)
+			_print_node_type(type);
+		else
+			log_err("get device ndoe type failed: %s", error_msg(ret));
 	} else
 		log_dbg("Privious Network : Non Exist");
 
-	loop->add_fd_watch(STDIN_FILENO, (WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP | WATCH_IO_NVAL), _on_keyboard_received, NULL, NULL);
+	loop->add_fd_watch(STDIN_FILENO, (WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP | WATCH_IO_NVAL),
+					   _on_keyboard_received, NULL, NULL);
 
 	loop->run();
+
+	for (i = 0; i < count; i++)
+		zb->release_device(device_list[i]);
 
 	artik_release_api_module(loop);
 	artik_release_api_module(zb);

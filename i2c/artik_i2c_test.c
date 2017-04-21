@@ -112,7 +112,7 @@ int main(void)
 {
 	artik_error ret = S_OK;
 	int platid = artik_get_platform();
-	char *cmd = NULL;
+	const char *cmd;
 
 	if (platid == ARTIK520)
 		cmd = cmd_artik520;

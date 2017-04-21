@@ -9,13 +9,13 @@
 
 #define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
-static char *token = NULL;
-static char *device_id = NULL;
-static char *user_id = NULL;
-static char *app_id = NULL;
-static char *message = NULL;
-static char *action = NULL;
-static char *device_type_id = NULL;
+char *token = NULL;
+char *device_id = NULL;
+char *user_id = NULL;
+char *app_id = NULL;
+char *message = NULL;
+char *action = NULL;
+char *device_type_id = NULL;
 
 static char *parse_json_object(const char *data, const char *obj)
 {

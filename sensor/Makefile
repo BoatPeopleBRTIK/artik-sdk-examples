@@ -1,16 +1,16 @@
-EXE_NAME := mqtt-test
+EXE_NAME := sensor-test
 
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
-	libartik-sdk-mqtt
+	libartik-sdk-sensor
 
 OBJS := \
-	artik_mqtt_cloud_test.o \
+	artik_sensor_test.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
 PKG_CONFIG := PKG_CONFIG_PATH=${SYSROOT}/usr/lib/pkgconfig/ PKG_CONFIG_SYSROOT_DIR=${SYSROOT} pkg-config
-CFLAGS := ${CFLAGS}
+CFLAGS := ${CFLAGS}# --sysroot=${SYSROOT}
 LDFLAGS := ${LDFLAGS} --sysroot=${SYSROOT} -L${SYSROOT}/usr/lib
 else
 PKG_CONFIG := PKG_CONFIG_PATH=${SYSROOT}/usr/lib/pkgconfig/ pkg-config

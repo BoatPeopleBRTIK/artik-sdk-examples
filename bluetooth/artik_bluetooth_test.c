@@ -163,12 +163,10 @@ static void on_bond(void *data, void *user_data)
 
 static void on_connect(void *data, void *user_data)
 {
-	char *remote_address = (char *)user_data;
 	bool connected = *(bool *)data;
 
 	fprintf(stdout, "on_connect %s\n",
 		connected ? "Connected" : "Disconnected");
-	bt->pxp_set_linkloss_level(remote_address, BT_ALERT_LEVEL_MILD);
 }
 
 static void on_proximity(void *data, void *user_data)
@@ -202,7 +200,6 @@ static void user_callback(artik_bt_event event, void *data, void *user_data)
 static void on_connect_timeout(void *user_data)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-	char *remote_address = (char *)user_data;
 
 	fprintf(stdout, "TEST: %s reached timeout\n", __func__);
 

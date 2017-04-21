@@ -28,6 +28,7 @@ static void get_scan_result(void)
 		fprintf(stdout, "%-20s %s 0x%X\n", list[i].bssid, list[i].name,
 			list[i].encryption_flags);
 
+	free(list);
 	artik_release_api_module(wifi);
 
 	return;
@@ -38,12 +39,13 @@ exit:
 	fprintf(stdout, "failed");
 }
 
-static void on_scan_result(void *user_data)
+static void on_scan_result(void *result, void *user_data)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
 	artik_wifi_module *wifi = (artik_wifi_module *)artik_request_api_module("wifi");
+	artik_error err = *((artik_error *)result);
 
-	fprintf(stdout, "on_scan_result\n");
+	fprintf(stdout, "on_scan_result (err=%d)\n", err);
 
 	get_scan_result();
 
@@ -79,7 +81,7 @@ artik_error test_wifi_scan(void)
 
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 
-	ret = wifi->init();
+	ret = wifi->init(ARTIK_WIFI_MODE_STATION);
 	CHECK_RET(ret);
 	ret = wifi->set_scan_result_callback(on_scan_result, NULL);
 	CHECK_RET(ret);
@@ -100,12 +102,14 @@ exit:
 	return ret;
 }
 
-static void on_connect(void *user_data)
+static void on_connect(void *result, void *user_data)
 {
 	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
 	artik_wifi_module *wifi = (artik_wifi_module *)artik_request_api_module("wifi");
+	artik_wifi_connection_info *info = (artik_wifi_connection_info *)result;
 
-	fprintf(stdout, "on_connect\n");
+	fprintf(stdout, "on_connect - err=%d, connected=%s\n", info->error,
+	        info->connected ? "true" : "false");
 
 	wifi->deinit();
 	loop->quit();
@@ -122,7 +126,7 @@ artik_error test_wifi_connect(void)
 
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 
-	ret = wifi->init();
+	ret = wifi->init(ARTIK_WIFI_MODE_STATION);
 	CHECK_RET(ret);
 	ret = wifi->set_connect_callback(on_connect, NULL);
 	CHECK_RET(ret);

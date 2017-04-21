@@ -14,16 +14,16 @@ static char device_id[MAX_UUID_LEN] = "< fill up with AKC device ID >";
 static char token[MAX_UUID_LEN] = "< fill up with AKC token >";
 static char pub_msg[MAX_MSG_LEN] = "< fill up with message to send >";
 
-void on_connect_subscribe(void *client, artik_error result)
+void on_connect_subscribe(artik_mqtt_config *client_config, void *user_data, artik_error result)
 {
-	artik_mqtt_client *client_data = (artik_mqtt_client *) client;
-	artik_mqtt_msg *msg = (artik_mqtt_msg *) client_data->config->user_data;
+	artik_mqtt_handle *client_data = (artik_mqtt_handle *) client_config->handle;
+	artik_mqtt_msg *msg = (artik_mqtt_msg *)user_data;
 	char pub_topic[MAX_UUID_LEN + 128];
 	artik_error ret;
 
 	if (result == S_OK && client_data) {
 		/* Subscribe to receive actions */
-		ret = mqtt->subscribe(client, msg->qos, msg->topic);
+		ret = mqtt->subscribe(client_data, msg->qos, msg->topic);
 		if (ret == S_OK)
 			fprintf(stdout, "subscribe success\n");
 		else
@@ -31,7 +31,7 @@ void on_connect_subscribe(void *client, artik_error result)
 
 		/* Publish message */
 		snprintf(pub_topic, sizeof(pub_topic), "/v1.1/messages/%s", device_id);
-		ret = mqtt->publish(client, 0, false, pub_topic, strlen(pub_msg), pub_msg);
+		ret = mqtt->publish(client_data, 0, false, pub_topic, strlen(pub_msg), pub_msg);
 		if (ret == S_OK)
 			fprintf(stdout, "publish success\n");
 		else
@@ -39,32 +39,34 @@ void on_connect_subscribe(void *client, artik_error result)
 	}
 }
 
-void on_message_disconnect(void *client, artik_mqtt_msg *msg)
+void on_message_disconnect(artik_mqtt_config *client_config, void *user_data, artik_mqtt_msg *msg)
 {
-	artik_mqtt_client *client_data;
+	artik_mqtt_handle *client_data;
+	artik_mqtt_module *user_mqtt = (artik_mqtt_module *) user_data;
 
-	if (msg && client) {
+	if (msg && client_config) {
 		fprintf(stdout, "topic %s, content %s\n", msg->topic, (char *)msg->payload);
-		client_data = (artik_mqtt_client *) client;
-		mqtt->disconnect(client_data);
+		client_data = (artik_mqtt_handle *) client_config->handle;
+		user_mqtt->disconnect(client_data);
 	}
 }
 
-void on_disconnect(void *client, artik_error result)
+void on_disconnect(artik_mqtt_config *client_config, void *user_data, artik_error result)
 {
-	artik_mqtt_client *client_data = (artik_mqtt_client *) client;
+	artik_mqtt_handle *client_data = (artik_mqtt_handle *) client_config->handle;
+	artik_mqtt_module *user_mqtt = (artik_mqtt_module *) user_data;
 
 	if (result == S_OK) {
 		fprintf(stdout, "disconnected\n");
 		if (client_data) {
-			mqtt->destroy_client(client_data);
+			user_mqtt->destroy_client(client_data);
 			client_data = NULL;
 			loop->quit();
 		}
 	}
 }
 
-void on_publish(void *client, int result)
+void on_publish(artik_mqtt_config *client_config, void *user_data, int result)
 {
 	fprintf(stdout, "message published (%d)\n", result);
 }
@@ -76,8 +78,7 @@ int main(int argc, char *argv[])
 	char sub_topic[MAX_UUID_LEN + 128];
 	artik_mqtt_config config;
 	artik_mqtt_msg subscribe_msg;
-	artik_mqtt_client *client;
-	artik_error ret = S_OK;
+	artik_mqtt_handle client;
 
 	/* Use parameters if provided, keep defaults otherwise */
 	if (argc > 2) {
@@ -107,18 +108,19 @@ int main(int argc, char *argv[])
 	memset(&config, 0, sizeof(artik_mqtt_config));
 	config.client_id = "sub_client";
 	config.block = true;
-	config.on_connect = on_connect_subscribe;
-	config.on_message = on_message_disconnect;
-	config.on_publish = on_publish;
-	config.on_disconnect = on_disconnect;
 	config.user_name = device_id;
 	config.pwd = token;
-	config.user_data = &subscribe_msg;
 
 	/* Connect to server */
 	mqtt->create_client(&client, &config);
 	mqtt->tls_set(client, "/etc/ssl/certs/ca-bundle.crt", NULL, NULL, NULL, NULL);
-	mqtt->connect_server(client, host, broker_port);
+
+	mqtt->set_connect(client, on_connect_subscribe, &subscribe_msg);
+	mqtt->set_disconnect(client, on_disconnect, mqtt);
+	mqtt->set_publish(client, on_publish, mqtt);
+	mqtt->set_message(client, on_message_disconnect, mqtt);
+
+	mqtt->connect(client, host, broker_port);
 
 	loop->run();
 

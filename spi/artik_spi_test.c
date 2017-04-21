@@ -24,7 +24,7 @@ static artik_error spi_test(int platid)
 	artik_spi_module *spi = (artik_spi_module *)artik_request_api_module("spi");
 	artik_spi_handle handle;
 	artik_error ret;
-
+	unsigned int i = 0;
 
 	unsigned char tx[] = {
 		0x12, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -57,7 +57,7 @@ static artik_error spi_test(int platid)
 	}
 
 	/* Compare the result */
-	for (int i = 0; i < ARRAY_SIZE(tx); i++) {
+	for (i = 0; i < ARRAY_SIZE(tx); i++) {
 		fprintf(stdout, "Comparing %d: %.2X %.2X\n", i, tx[i], rx[i]);
 		if (tx[i] != rx[i]) {
 			ret = E_TRY_AGAIN;

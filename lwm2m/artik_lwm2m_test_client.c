@@ -38,7 +38,7 @@ static void prv_change_obj(char *buffer, void *user_data)
 	result = prv_read_uri(&cmd, uri);
 	if (result != S_OK)
 		goto syntax_error;
-
+	printf("URI: %s\n", uri);
 	result = prv_read_data(&cmd, data);
 
 	if (result != S_OK)
@@ -148,11 +148,44 @@ static void on_changed_resource(void *data, void *user_data)
 	fprintf(stdout, "LWM2M resource changed: %s\r\n", uri);
 }
 
+static void test_serialization(artik_lwm2m_handle handle)
+{
+	int test_int[2] = {0, 1};
+	char *test_str[2] = {"192.168.1.27", "192.168.1.67"};
+	artik_error res = S_OK;
+	unsigned char *buffer_int = NULL, *buffer_str = NULL;
+	int len_int = 0, len_str = 0;
+
+	fprintf(stdout, "TEST: %s starting\n", __func__);
+	res = lwm2m->serialize_tlv_int(test_int, 2, &buffer_int, &len_int);
+	if (res == S_OK) {
+		fprintf(stdout, "Send to 'Error Code' (/3/0/11) multiple integer [0, 1]\n");
+		res = lwm2m->client_write_resource(handle, "/3/0/11", buffer_int, len_int);
+		fprintf(stdout, "result of serialization int sent : %s\n", error_msg(res));
+		if (buffer_int)
+			free(buffer_int);
+	} else {
+		fprintf(stdout, "Failed to serialize array of int : %s\n", error_msg(res));
+	}
+	res = lwm2m->serialize_tlv_string(test_str, 2, &buffer_str, &len_str);
+	if (res == S_OK) {
+		fprintf(stdout, "Send to 'Address' (/4/0/4) multiple string ['192.168.1.27', '192.168.1.67']\n");
+		res = lwm2m->client_write_resource(handle, "/4/0/4", buffer_str, len_str);
+		fprintf(stdout, "result of serialization string sent : %s\n", error_msg(res));
+		if (buffer_int)
+			free(buffer_str);
+	} else {
+		fprintf(stdout, "Failed to serialize array of string : %s\n", error_msg(res));
+	}
+}
+
 artik_error test_lwm2m_default()
 {
 	artik_error ret = S_OK;
 	artik_lwm2m_handle client_h = NULL;
 	artik_lwm2m_config config;
+	char *ips[2] = {"192.168.1.27", NULL};
+	char *routes[2] = {"192.168.1.1", NULL};
 	int i = 0;
 	int watch_id;
 
@@ -171,11 +204,16 @@ artik_error test_lwm2m_default()
 	fprintf(stdout, "TEST: %s key=%s\n", __func__, config.tls_psk_key);
 
 	/* Fill up objects */
-	config.objects[ARTIK_LWM2M_OBJECT_DEVICE] = lwm2m->create_device_object(
-			"Samsung", "Artik", "1234567890", "1.0", "1.0", "1.0", "HUB", 0,
-			5000, 1500, 100, 1000000, 200000, "Europe/Paris", "+01:00", "U");
+	config.objects[ARTIK_LWM2M_OBJECT_CONNECTIVITY_MONITORING] =
+		lwm2m->create_connectivity_monitoring_object(0, 0, 12, 1, 2, (const char **)ips,
+							     2, (const char **)routes, 0, "SAMI2_5G",
+							     2345, 189, 33);
+	config.objects[ARTIK_LWM2M_OBJECT_DEVICE] =
+		lwm2m->create_device_object("Samsung", "Artik", "1234567890", "1.0", "1.0", "1.0", "HUB", 0,
+					     5000, 1500, 100, 1000000, 200000, "Europe/Paris", "+01:00", "U");
 
 	ret = lwm2m->client_connect(&client_h, &config);
+	test_serialization(client_h);
 	if (ret != S_OK)
 		goto exit;
 

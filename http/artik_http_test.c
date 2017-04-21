@@ -23,7 +23,7 @@ artik_error test_http_get(void)
 
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 
-	ret = http->get("https://httpbin.org/get", &headers, &response, NULL, false);
+	ret = http->get("https://httpbin.org/get", &headers, &response, NULL, NULL);
 	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
 		return ret;
@@ -59,7 +59,7 @@ artik_error test_http_post(void)
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 	ret =
 	    http->post("https://httpbin.org/post", &headers, body, &response,
-		       NULL, false);
+		       NULL, NULL);
 	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
 		return ret;

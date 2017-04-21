@@ -26,5 +26,7 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 $(EXE_NAME): $(OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
+all: $(EXE_NAME)
+
 clean:
 	rm -f *.o $(EXE_NAME)

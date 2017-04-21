@@ -27,9 +27,9 @@ static artik_error test_rgb_led(int platid)
 	artik_error ret = S_OK;
 
 	struct led_gpios leds[] = {
-	  { NULL, { ARTIK_A520_GPIO_XEINT0, "red", GPIO_OUT, GPIO_DIGITAL, GPIO_EDGE_NONE, 0, NULL } },	/* Connected to J26-2 */
-	  { NULL, { ARTIK_A520_GPIO_XEINT1, "green", GPIO_OUT, GPIO_DIGITAL, GPIO_EDGE_NONE, 0, NULL } },	/* Connected to J26-3 */
-	  { NULL, { ARTIK_A520_GPIO_XEINT2, "blue", GPIO_OUT, GPIO_DIGITAL, GPIO_EDGE_NONE, 0, NULL } }	/* Connected to J26-4 */
+	  { NULL, { ARTIK_A520_GPIO_XEINT0, "red", GPIO_OUT, GPIO_EDGE_NONE, 0, NULL } },	/* Connected to J26-2 */
+	  { NULL, { ARTIK_A520_GPIO_XEINT1, "green", GPIO_OUT, GPIO_EDGE_NONE, 0, NULL } },	/* Connected to J26-3 */
+	  { NULL, { ARTIK_A520_GPIO_XEINT2, "blue", GPIO_OUT, GPIO_EDGE_NONE, 0, NULL } }	/* Connected to J26-4 */
 	};
 
 	if (platid == ARTIK520) {
@@ -137,7 +137,6 @@ static artik_error test_button_interrupt(int platid)
 
 	config.name = "button";
 	config.dir = GPIO_IN;
-	config.type = GPIO_DIGITAL;
 	config.edge = GPIO_EDGE_BOTH;
 	config.initial_value = 0;
 
