@@ -69,6 +69,9 @@ a button connected to the ARTIK board using a GPIO.
 ## [artik_http_test.c](http/artik_http_test.c)
 This program issues some POST and GET requests to the HTTP test service http://httpbin.org
 
+## [artik_http_openssl_test.c](http/artik_http_openssl_test.c)
+This program allows testing various TLS parameters against a HTTPS server (e.g. "openssl s_server")
+
 ## I2C
 ## [artik_i2c_test.c](i2c/artik_i2c_test.c)
 This programs tries to read and write registers on the CW2015 battery charger chip over I2C.
@@ -91,6 +94,9 @@ it will display the action's data then disconnect from the server.
 ## [artik_network_test.c](network/artik_network_test.c)
 This program displays the external public IP of the device, checks the online status of the board, then executes a manual
 disconnection/reconnection of the network interface to observe proper notification of the online status change.
+
+## [artik_dhcp_client_test.c](network/artik_dhcp_client_test.c)
+This programs starts a DHCP client to retrieve an IP address on the network.
 
 ## PWM
 ## [artik_pwm_test.c](pwm/artik_pwm_test.c)
@@ -124,6 +130,13 @@ fired. It also tests time synchronization with a NTP server.
 
 ## Websocket
 ## [artik_websocket_test.c](websocket/artik_websocket_test.c)
+This program opens a websocket to echo.websocket.org, sends a test message and display received frames.
+
+## [artik_websocket_client_test.c](websocket/artik_websocket_client_test.c)
+This program opens a websocket to the specified server with specified TLS configuration parameters. It then sends a test message
+and displays incoming frames.
+
+## [artik_websocket_cloud_test.c](websocket/artik_websocket_cloud_test.c)
 This program opens a websocket to ARTIK Cloud, sends a test message to the cloud every second and display any actions received from the
 cloud. The program exits automatically after 10 seconds.
 
