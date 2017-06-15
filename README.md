@@ -57,95 +57,95 @@ This program starts a SPP client and tries to connect to a remote SPP server. It
 channel.
 
 ## Cloud
-## [artik_cloud_test.c](cloud/artik_cloud_test.c)
+### [artik_cloud_test.c](cloud/artik_cloud_test.c)
 This program uses configured ARTIK Cloud credentials to issue requests to the cloud over commonly used REST APIs.
 
 ## GPIO
-## [artik_gpio_test.c](gpio/artik_gpio_test.c)
+### [artik_gpio_test.c](gpio/artik_gpio_test.c)
 This program changes the color of a RGB LED connected to the ARTIK board sequentially. It also prints out events received by pressing
 a button connected to the ARTIK board using a GPIO.
 
 ## HTTP
-## [artik_http_test.c](http/artik_http_test.c)
+### [artik_http_test.c](http/artik_http_test.c)
 This program issues some POST and GET requests to the HTTP test service http://httpbin.org
 
-## [artik_http_openssl_test.c](http/artik_http_openssl_test.c)
+### [artik_http_openssl_test.c](http/artik_http_openssl_test.c)
 This program allows testing various TLS parameters against a HTTPS server (e.g. "openssl s_server")
 
 ## I2C
-## [artik_i2c_test.c](i2c/artik_i2c_test.c)
+### [artik_i2c_test.c](i2c/artik_i2c_test.c)
 This programs tries to read and write registers on the CW2015 battery charger chip over I2C.
 
 ## LWM2M
-## [artik_lwm2m_test_client.c](lwm2m/artik_lwm2m_test_client.c)
+### [artik_lwm2m_test_client.c](lwm2m/artik_lwm2m_test_client.c)
 This programs connects to ARTIK Cloud's LWM2M server and exposes some objects. It then shows a console allowing the user
 to read or write some the LWM2M's objects properties.
 
 ## Media
-## [artik_media_test.c](media/artik_media_test.c)
+### [artik_media_test.c](media/artik_media_test.c)
 This program plays a sound file specified by the user as a parameter.
 
 ## MQTT
-## [artik_mqtt_cloud_test.c](mqtt/artik_mqtt_cloud_test.c)
+### [artik_mqtt_cloud_test.c](mqtt/artik_mqtt_cloud_test.c)
 This programs connects to ARTIK Cloud through MQTT and sends a test message to the cloud. Upon receiving an action from the cloud,
 it will display the action's data then disconnect from the server.
 
 ## Network
-## [artik_network_test.c](network/artik_network_test.c)
+### [artik_network_test.c](network/artik_network_test.c)
 This program displays the external public IP of the device, checks the online status of the board, then executes a manual
 disconnection/reconnection of the network interface to observe proper notification of the online status change.
 
-## [artik_dhcp_client_test.c](network/artik_dhcp_client_test.c)
+### [artik_dhcp_client_test.c](network/artik_dhcp_client_test.c)
 This programs starts a DHCP client to retrieve an IP address on the network.
 
 ## PWM
-## [artik_pwm_test.c](pwm/artik_pwm_test.c)
+### [artik_pwm_test.c](pwm/artik_pwm_test.c)
 This program will output a PWM signal on one of the ARTIK board's PWM output for a duration of 3 seconds. If a buzzer is connected
 to this output, a sound should be heard.
 
 ## Security
-## [artik_security_test.c](security/artik_security_test.c)
+### [artik_security_test.c](security/artik_security_test.c)
 This programs calls the Secure Element related APIs to display the builtin certificate, its associated serial number, and generate
 true random bytes.
 
 ## Sensor
-## [artik_sensor_test.c](sensor/artik_sensor_test.c)
+### [artik_sensor_test.c](sensor/artik_sensor_test.c)
 This program lists all the sensors available on the board, then display their measured data every 2 seconds until the user hits
 Ctrl+C.
 
 ## Serial
-## [artik_serial_test.c](serial/artik_serial_test.c)
+### [artik_serial_test.c](serial/artik_serial_test.c)
 This loopback test opens a serial port on the board, sends some data over it then compare with the received bytes. This test requires
 the TX and RX pins of the serial port to be physically looped on the board using a wire.
 
 ## SPI
-## [artik_spi_test.c](spi/artik_spi_test.c)
+### [artik_spi_test.c](spi/artik_spi_test.c)
 This loopback test sends some data over the SPI bus then compare with the received bytes. This test requires
 the MOSI and MISO pins of the SPI bus to be physically looped on the board using a wire.
 
 ## Time
-## [artik_time_test.c](time/artik_time_test.c)
+### [artik_time_test.c](time/artik_time_test.c)
 This program displays the current time, sets two alarms to be triggered in the next seconds, then check that the alarms are properly
 fired. It also tests time synchronization with a NTP server.
 
 ## Websocket
-## [artik_websocket_test.c](websocket/artik_websocket_test.c)
+### [artik_websocket_test.c](websocket/artik_websocket_test.c)
 This program opens a websocket to echo.websocket.org, sends a test message and display received frames.
 
-## [artik_websocket_client_test.c](websocket/artik_websocket_client_test.c)
+### [artik_websocket_client_test.c](websocket/artik_websocket_client_test.c)
 This program opens a websocket to the specified server with specified TLS configuration parameters. It then sends a test message
 and displays incoming frames.
 
-## [artik_websocket_cloud_test.c](websocket/artik_websocket_cloud_test.c)
+### [artik_websocket_cloud_test.c](websocket/artik_websocket_cloud_test.c)
 This program opens a websocket to ARTIK Cloud, sends a test message to the cloud every second and display any actions received from the
 cloud. The program exits automatically after 10 seconds.
 
 ## Wi-Fi
-## [artik_wifi_test.c](wifi/artik_wifi_test.c)
+### [artik_wifi_test.c](wifi/artik_wifi_test.c)
 This program scans the surrounding Wi-Fi access points and tries to connect to a preconfigured hotspot.
 
 ## ZigBee
-## [artik_zigbee_test.c](zigbee/artik_zigbee_test.c)
+### [artik_zigbee_test.c](zigbee/artik_zigbee_test.c)
 This programs exposes a command-line from where it is possible to expose ZigBee services, join or form a network, detect remote
 devices, then trigger actions on remote ZigBee devices.
 
