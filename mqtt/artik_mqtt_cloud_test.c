@@ -14,6 +14,36 @@ static char device_id[MAX_UUID_LEN] = "< fill up with AKC device ID >";
 static char token[MAX_UUID_LEN] = "< fill up with AKC token >";
 static char pub_msg[MAX_MSG_LEN] = "< fill up with message to send >";
 
+static const char *akc_root_ca =
+	"-----BEGIN CERTIFICATE-----\n"
+	"MIIE0zCCA7ugAwIBAgIQGNrRniZ96LtKIVjNzGs7SjANBgkqhkiG9w0BAQUFADCB\r\n"
+	"yjELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQL\r\n"
+	"ExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTowOAYDVQQLEzEoYykgMjAwNiBWZXJp\r\n"
+	"U2lnbiwgSW5jLiAtIEZvciBhdXRob3JpemVkIHVzZSBvbmx5MUUwQwYDVQQDEzxW\r\n"
+	"ZXJpU2lnbiBDbGFzcyAzIFB1YmxpYyBQcmltYXJ5IENlcnRpZmljYXRpb24gQXV0\r\n"
+	"aG9yaXR5IC0gRzUwHhcNMDYxMTA4MDAwMDAwWhcNMzYwNzE2MjM1OTU5WjCByjEL\r\n"
+	"MAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQLExZW\r\n"
+	"ZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTowOAYDVQQLEzEoYykgMjAwNiBWZXJpU2ln\r\n"
+	"biwgSW5jLiAtIEZvciBhdXRob3JpemVkIHVzZSBvbmx5MUUwQwYDVQQDEzxWZXJp\r\n"
+	"U2lnbiBDbGFzcyAzIFB1YmxpYyBQcmltYXJ5IENlcnRpZmljYXRpb24gQXV0aG9y\r\n"
+	"aXR5IC0gRzUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCvJAgIKXo1\r\n"
+	"nmAMqudLO07cfLw8RRy7K+D+KQL5VwijZIUVJ/XxrcgxiV0i6CqqpkKzj/i5Vbex\r\n"
+	"t0uz/o9+B1fs70PbZmIVYc9gDaTY3vjgw2IIPVQT60nKWVSFJuUrjxuf6/WhkcIz\r\n"
+	"SdhDY2pSS9KP6HBRTdGJaXvHcPaz3BJ023tdS1bTlr8Vd6Gw9KIl8q8ckmcY5fQG\r\n"
+	"BO+QueQA5N06tRn/Arr0PO7gi+s3i+z016zy9vA9r911kTMZHRxAy3QkGSGT2RT+\r\n"
+	"rCpSx4/VBEnkjWNHiDxpg8v+R70rfk/Fla4OndTRQ8Bnc+MUCH7lP59zuDMKz10/\r\n"
+	"NIeWiu5T6CUVAgMBAAGjgbIwga8wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8E\r\n"
+	"BAMCAQYwbQYIKwYBBQUHAQwEYTBfoV2gWzBZMFcwVRYJaW1hZ2UvZ2lmMCEwHzAH\r\n"
+	"BgUrDgMCGgQUj+XTGoasjY5rw8+AatRIGCx7GS4wJRYjaHR0cDovL2xvZ28udmVy\r\n"
+	"aXNpZ24uY29tL3ZzbG9nby5naWYwHQYDVR0OBBYEFH/TZafC3ey78DAJ80M5+gKv\r\n"
+	"MzEzMA0GCSqGSIb3DQEBBQUAA4IBAQCTJEowX2LP2BqYLz3q3JktvXf2pXkiOOzE\r\n"
+	"p6B4Eq1iDkVwZMXnl2YtmAl+X6/WzChl8gGqCBpH3vn5fJJaCGkgDdk+bW48DW7Y\r\n"
+	"5gaRQBi5+MHt39tBquCWIMnNZBU4gcmU7qKEKQsTb47bDN0lAtukixlE0kF6BWlK\r\n"
+	"WE9gyn6CagsCqiUXObXbf+eEZSqVir2G3l6BFoMtEMze/aiCKm0oHw0LxOXnGiYZ\r\n"
+	"4fQRbxC1lfznQgUy286dUV4otp6F01vvpX1FQHKOtw5rDgb7MzVIcbidJ4vEZV8N\r\n"
+	"hnacRHr2lVz2XTIIM6RUthg/aFzyQkqFOFSDX9HoLPKsEdao7WNq\r\n"
+	"-----END CERTIFICATE-----\n";
+
 void on_connect_subscribe(artik_mqtt_config *client_config, void *user_data, artik_error result)
 {
 	artik_mqtt_handle *client_data = (artik_mqtt_handle *) client_config->handle;
@@ -56,13 +86,10 @@ void on_disconnect(artik_mqtt_config *client_config, void *user_data, artik_erro
 	artik_mqtt_handle *client_data = (artik_mqtt_handle *) client_config->handle;
 	artik_mqtt_module *user_mqtt = (artik_mqtt_module *) user_data;
 
-	if (result == S_OK) {
-		fprintf(stdout, "disconnected\n");
-		if (client_data) {
-			user_mqtt->destroy_client(client_data);
-			client_data = NULL;
-			loop->quit();
-		}
+	if (client_data) {
+		user_mqtt->destroy_client(client_data);
+		client_data = NULL;
+		loop->quit();
 	}
 }
 
@@ -73,12 +100,12 @@ void on_publish(artik_mqtt_config *client_config, void *user_data, int result)
 
 int main(int argc, char *argv[])
 {
-	char *host = "api.artik.cloud";
 	int broker_port = 8883;
 	char sub_topic[MAX_UUID_LEN + 128];
 	artik_mqtt_config config;
 	artik_mqtt_msg subscribe_msg;
 	artik_mqtt_handle client;
+	artik_ssl_config ssl;
 
 	/* Use parameters if provided, keep defaults otherwise */
 	if (argc > 2) {
@@ -98,7 +125,7 @@ int main(int argc, char *argv[])
 	fprintf(stdout, "Message: %s\n", pub_msg);
 
 	mqtt = (artik_mqtt_module *)artik_request_api_module("mqtt");
-	loop = artik_request_api_module("loop");
+	loop = (artik_loop_module *)artik_request_api_module("loop");
 
 	memset(&subscribe_msg, 0, sizeof(artik_mqtt_msg));
 	snprintf(sub_topic, sizeof(sub_topic), "/v1.1/actions/%s", device_id);
@@ -111,16 +138,21 @@ int main(int argc, char *argv[])
 	config.user_name = device_id;
 	config.pwd = token;
 
+	/* TLS configuration  */
+	memset(&ssl, 0, sizeof(artik_ssl_config));
+	ssl.verify_cert = ARTIK_SSL_VERIFY_REQUIRED;
+	ssl.ca_cert.data = (char *)akc_root_ca;
+	ssl.ca_cert.len = strlen(akc_root_ca);
+	config.tls = &ssl;
+
 	/* Connect to server */
 	mqtt->create_client(&client, &config);
-	mqtt->tls_set(client, "/etc/ssl/certs/ca-bundle.crt", NULL, NULL, NULL, NULL);
-
 	mqtt->set_connect(client, on_connect_subscribe, &subscribe_msg);
 	mqtt->set_disconnect(client, on_disconnect, mqtt);
 	mqtt->set_publish(client, on_publish, mqtt);
 	mqtt->set_message(client, on_message_disconnect, mqtt);
 
-	mqtt->connect(client, host, broker_port);
+	mqtt->connect(client, "api.artik.cloud", broker_port);
 
 	loop->run();
 

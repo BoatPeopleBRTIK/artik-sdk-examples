@@ -7,7 +7,7 @@
 #define ENDPOINT_ID_MAX				239
 #define KEYBOARD_INPUT_SIZE			100
 #define DEFAULT_TEST_CHANNEL		25
-#define DEFAULT_TEST_TX_POWER		ZIGBEE_TX_POWER_2
+#define DEFAULT_TEST_TX_POWER		ARTIK_ZIGBEE_TX_POWER_2
 #define DEFAULT_TEST_PANID			0x1234
 #define CHANNEL_MIN					11
 #define CHANNEL_MAX					26
@@ -46,8 +46,8 @@ struct st_timer {
 };
 
 struct device_type {
-	ZIGBEE_PROFILE profile;
-	ZIGBEE_DEVICEID device_id;
+	ARTIK_ZIGBEE_PROFILE profile;
+	ARTIK_ZIGBEE_DEVICEID device_id;
 	int default_endpoint_id;
 	char *name;
 	char *arg_name;
@@ -55,6 +55,8 @@ struct device_type {
 
 struct test_device {
 	artik_zigbee_endpoint_handle handle;
+	ARTIK_ZIGBEE_PROFILE profile;
+	ARTIK_ZIGBEE_DEVICEID device_id;
 	int endpoint_id;
 
 	artik_error(*ezmode_commissioning_initiator_start)(artik_zigbee_endpoint_handle handle);
@@ -67,8 +69,8 @@ struct test_device {
 	artik_error(*identify_get_remaining_time)(artik_zigbee_endpoint_handle handle,
 											  const artik_zigbee_endpoint *endpoint,
 											  int *time);
-	artik_error(*groups_name_support)(artik_zigbee_endpoint_handle handle,
-									  int endpoint);
+	artik_error(*groups_get_local_name_support)(artik_zigbee_endpoint_handle handle,
+									  			int endpoint);
 	artik_error(*groups_set_local_name_support)(artik_zigbee_endpoint_handle handle, bool support);
 	artik_error(*onoff_command)(artik_zigbee_endpoint_handle handle,
 								const artik_zigbee_endpoint *endpoint,
@@ -119,7 +121,7 @@ int read_pan_id(char *input, int max_size, int *pan_id);
 void show_request_channel();
 void show_request_tx();
 void show_request_pan_id();
-struct test_device *add_test_device(artik_zigbee_endpoint_handle handle,
+struct test_device *add_test_device(ARTIK_ZIGBEE_PROFILE profile, ARTIK_ZIGBEE_DEVICEID device_id,
 									int endpoint_id);
 void delete_test_device(int endpoint_id);
 void release_all_test_devices(artik_zigbee_module *zb);

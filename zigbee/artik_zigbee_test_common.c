@@ -174,24 +174,24 @@ void show_select()
 void show_network_status(int status)
 {
 	switch (status) {
-	case ZIGBEE_NO_NETWORK:
-		showln("State: ZIGBEE_NO_NETWORK");
+	case ARTIK_ZIGBEE_NO_NETWORK:
+		showln("State: ARTIK_ZIGBEE_NO_NETWORK");
 		break;
 
-	case ZIGBEE_JOINING_NETWORK:
-		showln("State: ZIGBEE_JOINING_NETWORK");
+	case ARTIK_ZIGBEE_JOINING_NETWORK:
+		showln("State: ARTIK_ZIGBEE_JOINING_NETWORK");
 		break;
 
-	case ZIGBEE_JOINED_NETWORK:
-		showln("State: ZIGBEE_JOINED_NETWORK");
+	case ARTIK_ZIGBEE_JOINED_NETWORK:
+		showln("State: ARTIK_ZIGBEE_JOINED_NETWORK");
 		break;
 
-	case ZIGBEE_JOINED_NETWORK_NO_PARENT:
-		showln("State: ZIGBEE_JOINED_NETWORK_NO_PARENT");
+	case ARTIK_ZIGBEE_JOINED_NETWORK_NO_PARENT:
+		showln("State: ARTIK_ZIGBEE_JOINED_NETWORK_NO_PARENT");
 		break;
 
-	case ZIGBEE_LEAVING_NETWORK:
-		showln("State: ZIGBEE_LEAVING_NETWORK");
+	case ARTIK_ZIGBEE_LEAVING_NETWORK:
+		showln("State: ARTIK_ZIGBEE_LEAVING_NETWORK");
 		break;
 
 	default:
@@ -202,24 +202,24 @@ void show_network_status(int status)
 void show_node_type(int type)
 {
 	switch (type) {
-	case ZIGBEE_UNKNOWN_DEVICE:
-		showln("Type: ZIGBEE_UNKNOWN_DEVICE");
+	case ARTIK_ZIGBEE_UNKNOWN_DEVICE:
+		showln("Type: ARTIK_ZIGBEE_UNKNOWN_DEVICE");
 		break;
 
-	case ZIGBEE_COORDINATOR:
-		showln("Type: ZIGBEE_COORDINATOR");
+	case ARTIK_ZIGBEE_COORDINATOR:
+		showln("Type: ARTIK_ZIGBEE_COORDINATOR");
 		break;
 
-	case ZIGBEE_ROUTER:
-		showln("Type: ZIGBEE_ROUTER");
+	case ARTIK_ZIGBEE_ROUTER:
+		showln("Type: ARTIK_ZIGBEE_ROUTER");
 		break;
 
-	case ZIGBEE_END_DEVICE:
-		showln("Type: ZIGBEE_END_DEVICE");
+	case ARTIK_ZIGBEE_END_DEVICE:
+		showln("Type: ARTIK_ZIGBEE_END_DEVICE");
 		break;
 
-	case ZIGBEE_SLEEPY_END_DEVICE:
-		showln("Type: ZIGBEE_SLEEPY_END_DEVICE");
+	case ARTIK_ZIGBEE_SLEEPY_END_DEVICE:
+		showln("Type: ARTIK_ZIGBEE_SLEEPY_END_DEVICE");
 		break;
 	}
 }
@@ -230,7 +230,7 @@ void show_device(artik_zigbee_device *device)
 	int i, j;
 
 	show("Node id:0x%04X eui:0x", device->node_id);
-	for (i = 0; i < EUI64_SIZE; i++)
+	for (i = 0; i < ARTIK_ZIGBEE_EUI64_SIZE; i++)
 		show("%02X", device->eui64[i]);
 	showln("");
 
@@ -245,10 +245,10 @@ void show_device(artik_zigbee_device *device)
 		showln("Device id(0x%04X) name(%s)", ep->device_id,
 				get_device_name(ep->device_id));
 
-		for (j = 0; j < MAX_CLUSTER_SIZE && ep->server_cluster[j] >= 0; j++)
+		for (j = 0; j < ARTIK_ZIGBEE_MAX_CLUSTER_SIZE && ep->server_cluster[j] >= 0; j++)
 			showln("Cluster id 0x%04x, SERVER", ep->server_cluster[j]);
 
-		for (j = 0; j < MAX_CLUSTER_SIZE && ep->client_cluster[j] >= 0; j++)
+		for (j = 0; j < ARTIK_ZIGBEE_MAX_CLUSTER_SIZE && ep->client_cluster[j] >= 0; j++)
 			showln("Cluster id 0x%04x, CLIENT", ep->client_cluster[j]);
 	}
 
@@ -370,7 +370,8 @@ struct test_device *get_test_device_by_endpoint_id(int endpoint_id)
 	return NULL;
 }
 
-struct test_device *add_test_device(artik_zigbee_endpoint_handle handle, int endpoint_id)
+struct test_device *add_test_device(ARTIK_ZIGBEE_PROFILE profile, ARTIK_ZIGBEE_DEVICEID device_id,
+									int endpoint_id)
 {
 	artik_list *elem = NULL;
 	struct test_device *test_device = NULL;
@@ -379,12 +380,14 @@ struct test_device *add_test_device(artik_zigbee_endpoint_handle handle, int end
 	if (test_device == NULL)
 		goto err;
 
-	elem = artik_list_add(&test_device_list, (ARTIK_LIST_HANDLE)handle, sizeof(artik_list));
+	elem = artik_list_add(&test_device_list, (ARTIK_LIST_HANDLE) endpoint_id, sizeof(artik_list));
 	if (elem == NULL)
 		goto err;
 
 	memset(test_device, 0, sizeof(struct test_device));
-	test_device->handle = handle;
+	test_device->handle = (artik_zigbee_endpoint_handle) endpoint_id;
+	test_device->profile = profile;
+	test_device->device_id = device_id;
 	test_device->endpoint_id = endpoint_id;
 	elem->data = test_device;
 
@@ -406,20 +409,8 @@ void delete_test_device(int endpoint_id)
 
 void release_all_test_devices(artik_zigbee_module *zb)
 {
-	struct test_device *device;
-	artik_list *elem;
-	int i;
-
-	for (i = 0;; i++) {
-		elem = artik_list_get_by_pos(test_device_list, i);
-		if (elem == NULL)
-			break;
-
-		device = (struct test_device *)elem->data;
-		zb->release_device(device->handle);
-	}
-
 	artik_list_delete_all(&test_device_list);
+	zb->deinitialize();
 }
 
 int get_test_device_count()

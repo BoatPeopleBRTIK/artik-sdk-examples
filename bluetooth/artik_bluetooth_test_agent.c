@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <signal.h>
-//#include <gio/gio.h>
+#include <gio/gio.h>
 #include <stdbool.h>
 
 #include <artik_module.h>

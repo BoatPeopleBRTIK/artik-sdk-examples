@@ -1,11 +1,19 @@
-EXE_NAME := websocket-test
 
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
 	libartik-sdk-connectivity
 
-OBJS := \
+TEST_EXE_NAME := websocket-test
+TEST_OBJS := \
 	artik_websocket_test.o
+
+CLOUD_EXE_NAME := websocket-cloud
+CLOUD_OBJS := \
+	artik_websocket_cloud_test.o
+
+CLIENT_EXE_NAME := websocket-client
+CLIENT_OBJS := \
+	artik_websocket_client_test.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
@@ -22,10 +30,16 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(EXE_NAME): $(OBJS)
+$(TEST_EXE_NAME): $(TEST_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
-all: $(EXE_NAME)
+$(CLOUD_EXE_NAME): $(CLOUD_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+$(CLIENT_EXE_NAME): $(CLIENT_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+all: $(TEST_EXE_NAME) $(CLOUD_EXE_NAME) $(CLIENT_EXE_NAME)
 
 clean:
-	rm -f *.o $(EXE_NAME)
+	rm -f *.o $(TEST_EXE_NAME) $(CLOUD_EXE_NAME) $(CLIENT_EXE_NAME)

@@ -1,15 +1,15 @@
-# Specify here the name to give to the resulting executable
-EXE_NAME := http-test
 
-# Add here the SDK libraries you want to link against
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
 	libartik-sdk-connectivity
 
-# Add here the source files (.c) you want to compile and link
-# Use .o extension to target same name .c file.
-OBJS := \
+TEST_EXE_NAME := http-test
+TEST_OBJS := \
 	artik_http_test.o
+
+OPENSSL_EXE_NAME := http-openssl-test
+OPENSSL_OBJS := \
+	artik_http_openssl_test.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
@@ -26,10 +26,13 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(EXE_NAME): $(OBJS)
+$(TEST_EXE_NAME): $(TEST_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
-all: $(EXE_NAME)
+$(OPENSSL_EXE_NAME): $(OPENSSL_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+all: $(TEST_EXE_NAME) $(OPENSSL_EXE_NAME)
 
 clean:
-	rm -f *.o $(EXE_NAME)
+	rm -f *.o $(TEST_EXE_NAME) $(OPENSSL_EXE_NAME)

@@ -11,62 +11,57 @@
 #include <artik_loop.h>
 #include <artik_bluetooth.h>
 
-#define MAX_BDADDR_LEN 17
-#define BUFFER_LEN 128
-#define SCAN_TIME_MILLISECONDS (20*1000)
+#define MAX_BDADDR_LEN			17
+#define BUFFER_LEN				128
+#define SCAN_TIME_MILLISECONDS	(20*1000)
+#define BUFFER_SIZE				17
+
+static char buffer[BUFFER_SIZE];
 
 typedef void (*signal_fuc)(int);
 
-static artik_bluetooth_module *bt;
-static artik_loop_module *loop;
-static artik_error err;
-static char *remote_address;
-
-static void user_callback(artik_bt_event event, void *data, void *user_data);
+static artik_loop_module *loop_main;
 
 void uninit(int signal)
 {
-	err = bt->pan_disconnect();
-	if (err != S_OK)
-		printf("Disconnect Error:%d!\r\n", err);
+	artik_error ret;
+
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+		artik_request_api_module("bluetooth");
+	ret = bt->pan_disconnect();
+	if (ret != S_OK)
+		fprintf(stdout, "Disconnect Error!\r\n");
 	else
-		printf("Disconnect OK!\r\n");
-	loop->quit();
+		fprintf(stdout, "Disconnect OK!\r\n");
+	loop_main->quit();
+	artik_release_api_module(bt);
 }
 
 static void print_devices(artik_bt_device *devices, int num)
 {
-	int i = 0, j = 0;
+	int i = 0;
 
 	for (i = 0; i < num; i++) {
-		fprintf(stdout, "Address: %s\n",
+		char *re_name;
+
+		fprintf(stdout, "[Device]: %s\t",
 			devices[i].remote_address ? devices[i].
 			remote_address : "(null)");
-		fprintf(stdout, "Name: %s\n",
-			devices[i].remote_name ? devices[i].
+		re_name = (devices[i].remote_name ? devices[i].
 			remote_name : "(null)");
-		fprintf(stdout, "RSSI: %d\n", devices[i].rssi);
+		if (strlen(re_name) < 8) {
+			fprintf(stdout, "%s\t\t",
+				devices[i].remote_name ? devices[i].
+				remote_name : "(null)");
+			}
+		else{
+			fprintf(stdout, "%s\t",
+				devices[i].remote_name ? devices[i].
+				remote_name : "(null)");
+			}
+		fprintf(stdout, "RSSI: %d\t", devices[i].rssi);
 		fprintf(stdout, "Bonded: %s\n",
 			devices[i].is_bonded ? "true" : "false");
-		fprintf(stdout, "Connected: %s\n",
-			devices[i].is_connected ? "true" : "false");
-		fprintf(stdout, "Authorized: %s\n",
-			devices[i].is_authorized ? "true" : "false");
-		fprintf(stdout, "Class:\n");
-		fprintf(stdout, "\tMajor:0x%02x\n", devices[i].cod.major);
-		fprintf(stdout, "\tMinor:0x%02x\n", devices[i].cod.minor);
-		fprintf(stdout, "\tService:0x%04x\n",
-			devices[i].cod.service_class);
-		if (devices[i].uuid_length > 0) {
-			fprintf(stdout, "UUIDs:\n");
-			for (j = 0; j < devices[i].uuid_length; j++) {
-				fprintf(stdout, "\t%s [%s]\n",
-					devices[i].uuid_list[j].uuid_name,
-					devices[i].uuid_list[j].uuid);
-			}
-		}
-
-		fprintf(stdout, "\n");
 	}
 }
 
@@ -77,29 +72,36 @@ static void on_scan(void *data, void *user_data)
 	print_devices(dev, 1);
 }
 
-static void on_connect(void)
+static void on_connect(void *data, void *user_data)
 {
 	char buf[BUFFER_LEN];
 	char *interface = NULL;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+		artik_request_api_module("bluetooth");
+	bool connected = *(bool *)data;
 
-	if (S_OK == bt->pan_get_interface(&interface)) {
+	if (!connected) {
+		fprintf(stdout, "<PANU>: Connect error\n");
+		goto exit;
+	}
+
+	if (bt->pan_get_interface(&interface) == S_OK) {
 		snprintf(buf, BUFFER_LEN, "dhclient -r %s", interface);
 		if (system(buf) < 0) {
 			fprintf(stdout, "cmd system error\n");
-			return;
+			goto exit;
 		}
 		snprintf(buf, BUFFER_LEN, "dhclient %s", interface);
 		if (system(buf) < 0) {
 			fprintf(stdout, "cmd system error\n");
-			return;
+			goto exit;
 		}
 		snprintf(buf, BUFFER_LEN, "ifconfig eth0 down");
 		if (system(buf) < 0) {
 			fprintf(stdout, "cmd system error\n");
-			return;
+			goto exit;
 		}
-		fprintf(stdout, "Please input test command(max length is 127) "
-			"or 'q' to exit\n");
+		fprintf(stdout, "Please input test command(max length is 127) or 'q' to exit\n");
 		for (;;) {
 			memset(buf, 0, BUFFER_LEN);
 			if (fgets(buf, BUFFER_LEN, stdin) == NULL) {
@@ -119,31 +121,35 @@ static void on_connect(void)
 		}
 		uninit(SIGINT);
 	}
+exit:
+	artik_release_api_module(bt);
 }
+
 static void on_bond(void *data, void *user_data)
 {
-	const char *uuid = "nap";
-	char *address = (char *)user_data;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+		artik_request_api_module("bluetooth");
+	char *remote_address = (char *)user_data;
 	bool paired = *(bool *)data;
 	char *network_interface = NULL;
-	const int MAX_RETRY_TIMES = 30;
-	int retry_times = 0;
+	artik_error ret = S_OK;
 
-	fprintf(stdout, "on_bond %s\n", paired ? "Paired" : "UnPaired");
 	if (paired) {
-		fprintf(stdout, "remote address is %s\n", address);
-		while (!bt->is_paired(address)) {
-			sleep(1);
-			++retry_times;
-			if (retry_times > MAX_RETRY_TIMES) {
-				fprintf(stdout, "bond %s failed\n", address);
-				return;
-			}
-		}
-		err = bt->pan_connect(address, uuid, &network_interface);
-		if (S_OK == err && network_interface)
-			on_connect();
+		fprintf(stdout, "<PANU>: %s - %s\n", __func__, "Paired");
+		fprintf(stdout, "<PANU>: %s - start connect\n", __func__);
+		const char *uuid = "nap";
+
+		ret = bt->pan_connect(remote_address, uuid,
+			&network_interface);
+		if ( (ret == S_OK) && network_interface)
+			fprintf(stdout, "<PANU>: call pan connect sucess\n");
+		else
+			fprintf(stdout, "<PANU>: call pan connect error\n");
+
+	} else {
+		fprintf(stdout, "<PANU>: %s - %s\n", __func__, "Unpaired");
 	}
+	artik_release_api_module(bt);
 }
 
 static void user_callback(artik_bt_event event, void *data, void *user_data)
@@ -155,78 +161,281 @@ static void user_callback(artik_bt_event event, void *data, void *user_data)
 	case BT_EVENT_BOND:
 		on_bond(data, user_data);
 		break;
+	case BT_EVENT_CONNECT:
+		on_connect(data, user_data);
+		break;
 	default:
 		break;
 	}
 }
 
-static void on_timeout_callback(void *user_data)
+static void scan_timeout_callback(void *user_data)
 {
-	char mac_addr[MAX_BDADDR_LEN + 1];
+	artik_loop_module *loop = (artik_loop_module *)user_data;
 
-	fprintf(stdout, "%s: stop scanning\n", __func__);
+	fprintf(stdout, "<PANU>: %s - stop scan\n", __func__);
+	loop->quit();
+}
+
+artik_error bluetooth_scan(void)
+{
+	artik_error ret;
+	artik_loop_module *loop = (artik_loop_module *)
+		artik_request_api_module("loop");
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+		artik_request_api_module("bluetooth");
+	int timeout_id = 0;
+
+	fprintf(stdout, "<PANU>: %s - starting\n", __func__);
+
+	ret = bt->remove_devices();
+	if (ret != S_OK)
+		goto exit;
+
+	ret = bt->set_callback(BT_EVENT_SCAN, user_callback, NULL);
+	if (ret != S_OK)
+		goto exit;
+
+	ret = bt->start_scan();
+	if (ret != S_OK)
+		goto exit;
+
+	loop->add_timeout_callback(&timeout_id,
+		SCAN_TIME_MILLISECONDS, scan_timeout_callback,
+		(void *)loop);
+	loop->run();
+
+exit:
 	bt->stop_scan();
 	bt->unset_callback(BT_EVENT_SCAN);
 
-	fprintf(stdout, "\nPlease input NAP device MAC address:\n");
-	memset(mac_addr, 0, MAX_BDADDR_LEN + 1);
-	if (fgets(mac_addr, MAX_BDADDR_LEN + 1, stdin) == NULL) {
-		fprintf(stdout, "\ncmd fgets error\n");
-		return;
-	}
+	artik_release_api_module(loop);
+	artik_release_api_module(bt);
+	return ret;
+}
 
-	if (remote_address) {
-		free(remote_address);
-		remote_address = NULL;
-	}
-	remote_address = strdup(mac_addr);
-	err = bt->set_callback(BT_EVENT_BOND, user_callback,
-		     (void *)remote_address);
-	err = bt->start_bond(mac_addr);
+artik_error get_addr(char *remote_addr)
+{
+	char mac_other[2] = "";
+	artik_error ret = S_OK;
+
+	fprintf(stdout, "\n<PANU>: Input Server MAC address:\n");
+
+	if (fgets(remote_addr, MAX_BDADDR_LEN + 1, stdin) == NULL)
+		return E_BT_ERROR;
+	if (fgets(mac_other, 2, stdin) == NULL)
+		return E_BT_ERROR;
+	if (strlen(remote_addr) != MAX_BDADDR_LEN)
+		ret =  E_BT_ERROR;
+	return ret;
+}
+
+static artik_error set_callback(char *remote_addr)
+{
+	artik_error ret;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+		artik_request_api_module("bluetooth");
+
+	ret = bt->set_callback(BT_EVENT_BOND, user_callback,
+		(void *)remote_addr);
+	if (ret != S_OK)
+		goto exit;
+	ret = bt->set_callback(BT_EVENT_CONNECT, user_callback,
+		(void *)remote_addr);
+	if (ret != S_OK)
+		goto exit;
+
+exit:
+	artik_release_api_module(bt);
+	return ret;
+}
+
+static void ask(char *prompt)
+{
+	printf("%s\n", prompt);
+	char *buf;
+
+	buf = fgets(buffer, BUFFER_SIZE, stdin);
+	if (buf == NULL)
+		printf("Request Error\n");
+}
+
+static void m_request_pincode(
+			artik_bt_agent_request_handle handle,
+			char *device, void *user_data)
+{
+	printf("Request pincode (%s)\n", device);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Enter PIN Code: ");
+
+	bt->agent_send_pincode(handle, buffer);
+	artik_release_api_module(bt);
+}
+
+static void m_request_passkey(
+			artik_bt_agent_request_handle handle,
+			char *device, void *user_data)
+{
+	unsigned long passkey;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	printf("Request passkey (%s)\n", device);
+	ask("Enter passkey (1~999999): ");
+
+	passkey = strtoul(buffer, NULL, 10);
+	bt->agent_send_passkey(handle, passkey);
+	artik_release_api_module(bt);
+}
+
+static void m_request_confirmation(
+				artik_bt_agent_request_handle handle,
+				char *device, unsigned long passkey,
+				void *user_data)
+{
+	printf("Request confirmation (%s)\nPasskey: %06lu\n", device, passkey);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Confirm passkey? (yes/no): ");
+	if (!strncmp(buffer, "yes", 3))
+		bt->agent_send_empty_response(handle);
+	else
+		bt->agent_send_error(handle, BT_AGENT_REQUEST_REJECTED, "");
+
+	artik_release_api_module(bt);
+}
+
+static void m_request_authorization(
+				artik_bt_agent_request_handle handle,
+				char *device, void *user_data)
+{
+	printf("Request authorization (%s)\n", device);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Authorize? (yes/no): ");
+	if (!strncmp(buffer, "yes", 3))
+		bt->agent_send_empty_response(handle);
+	else
+		bt->agent_send_error(handle, BT_AGENT_REQUEST_REJECTED, "");
+
+	artik_release_api_module(bt);
+}
+
+static void m_authorize_service(
+					artik_bt_agent_request_handle handle,
+					char *device, char *uuid,
+					void *user_data)
+{
+	printf("Authorize Service (%s, %s)\n", device, uuid);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Authorize connection? (yes/no): ");
+	if (!strncmp(buffer, "yes", 3))
+		bt->agent_send_empty_response(handle);
+	else
+		bt->agent_send_error(handle, BT_AGENT_REQUEST_REJECTED, "");
+
+	artik_release_api_module(bt);
+}
+
+static artik_error agent_register(void)
+{
+	artik_error ret = S_OK;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+			artik_request_api_module("bluetooth");
+	artik_loop_module *loop = (artik_loop_module *)
+			artik_request_api_module("loop");
+	artik_bt_agent_callbacks *m_callback =
+		(artik_bt_agent_callbacks *)
+		malloc(sizeof(artik_bt_agent_callbacks));
+	artik_bt_agent_capability g_capa = BT_CAPA_KEYBOARDDISPLAY;
+
+	memset(m_callback, 0, sizeof(artik_bt_agent_callbacks));
+	m_callback->authorize_service_func = m_authorize_service;
+	m_callback->request_authorization_func = m_request_authorization;
+	m_callback->request_confirmation_func = m_request_confirmation;
+	m_callback->request_passkey_func = m_request_passkey;
+	m_callback->request_pincode_func = m_request_pincode;
+
+	bt->set_discoverable(true);
+
+	printf("Invoke register...\n");
+	bt->agent_register_capability(g_capa);
+	bt->agent_set_default();
+
+	artik_release_api_module(loop);
+	artik_release_api_module(bt);
+	free(m_callback);
+	return ret;
+
 }
 
 int main(int argc, char *argv[])
 {
 	artik_error ret = S_OK;
 	signal_fuc signal_uninit = uninit;
+	artik_bluetooth_module *bt_main = NULL;
+	char remote_address[MAX_BDADDR_LEN] = "";
 	int status = -1;
-	int timeout_id = 0;
 
 	if (!artik_is_module_available(ARTIK_MODULE_BLUETOOTH)) {
-		printf("TEST:Bluetooth module is not available,skipping test...\n");
+		fprintf(stdout, "<PANU>: Bluetooth not available!\n");
 		return -1;
 	}
 
 	status = system("systemctl stop connman");
 	if (-1 == status || !WIFEXITED(status) || 0 != WEXITSTATUS(status)) {
-		printf("stop connman service failed\r\n");
+		printf("<PANU>: Stop connman service failed\r\n");
 		return -1;
 	}
 
-	bt = (artik_bluetooth_module *) artik_request_api_module("bluetooth");
-	loop = (artik_loop_module *)
-			artik_request_api_module("loop");
+	bt_main = (artik_bluetooth_module *)
+		artik_request_api_module("bluetooth");
+	loop_main = (artik_loop_module *)
+		artik_request_api_module("loop");
+	if (!bt_main || !loop_main)
+		goto loop_quit;
 
-	if (!bt || !loop)
-		goto out;
-	bt->remove_devices();
-	ret = bt->set_callback(BT_EVENT_SCAN, user_callback, (void *)bt);
-	if (ret != S_OK)
-		goto out;
-	ret = bt->start_scan();
-	if (ret != S_OK)
-		goto out;
-	loop->add_timeout_callback(&timeout_id, SCAN_TIME_MILLISECONDS,
-		on_timeout_callback, (void *)loop);
+	ret = agent_register();
+	if (ret != S_OK) {
+		fprintf(stdout, "<PANU>: Agent register error!\n");
+		goto loop_quit;
+	}
+	fprintf(stdout, "<PANU>: Agent register success!\n");
 
+	ret = bluetooth_scan();
+	if (ret != S_OK) {
+		fprintf(stdout, "<PANU>: Scan error!\n");
+		goto loop_quit;
+	}
+
+	ret = get_addr(remote_address);
+	if (ret != S_OK) {
+		fprintf(stdout, "<PANU>: Get address error!\n");
+		goto loop_quit;
+	}
+
+	ret = set_callback(remote_address);
+	if (ret != S_OK) {
+		fprintf(stdout, "<PANU>: Set callback error!\n");
+		goto loop_quit;
+	}
+
+	fprintf(stdout, "<PANU>: Start bond!\n");
+	bt_main->start_bond(remote_address);
 	signal(SIGINT, signal_uninit);
-	loop->run();
-out:
-	if (bt)
-		artik_release_api_module(bt);
-	if (loop)
-		artik_release_api_module(loop);
-	if (remote_address)
-		free(remote_address);
-	return 0;
+	loop_main->run();
+
+loop_quit:
+	if (bt_main)
+		artik_release_api_module(bt_main);
+	if (loop_main)
+		artik_release_api_module(loop_main);
+	fprintf(stdout, "<PANU>: Loop quit!\n");
+	return S_OK;
 }

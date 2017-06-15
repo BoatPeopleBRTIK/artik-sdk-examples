@@ -15,7 +15,6 @@
 #include "artik_bluetooth_test_commandline.h"
 
 #define MAX_BDADDR_LEN			17
-#define MAX_PACKET_SIZE			1024
 #define SCAN_TIME_MILLISECONDS	(20*1000)
 #define BUFFER_LEN				128
 
@@ -41,7 +40,7 @@ static void prop_callback(artik_bt_event event, void *data, void *user_data)
 
 static void prv_list(char *buffer, void *user_data)
 {
-	artik_error ret = S_OK;
+	artik_error ret;
 	artik_bt_ftp_file *file_list;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 		artik_request_api_module("bluetooth");
@@ -80,6 +79,8 @@ static void prv_get(char *buffer, void *user_data)
 		arg[strlen(buffer) - 1] = '\0';
 		argv = g_strsplit(arg, " ", -1);
 	}
+	if (argv == NULL)
+		goto quit;
 
 	fprintf(stdout, "Start testing download file from %s to %s...\n",
 		argv[0], argv[1]);
@@ -90,6 +91,7 @@ static void prv_get(char *buffer, void *user_data)
 		fprintf(stdout, "ftp download file failed !\n");
 	else
 		fprintf(stdout, "ftp download file succeeded !\n");
+quit:
 	g_strfreev(argv);
 	artik_release_api_module(bt);
 }
@@ -108,6 +110,8 @@ static void prv_put(char *buffer, void *user_data)
 		arg[strlen(buffer) - 1] = '\0';
 		argv = g_strsplit(arg, " ", -1);
 	}
+	if (argv == NULL)
+		goto quit;
 
 	fprintf(stdout, "Start testing upload file from %s to %s...\n",
 		argv[0], argv[1]);
@@ -118,6 +122,8 @@ static void prv_put(char *buffer, void *user_data)
 		fprintf(stdout, "ftp upload file failed !\n");
 	else
 		fprintf(stdout, "ftp upload file succeeded !\n");
+
+quit:
 	g_strfreev(argv);
 	artik_release_api_module(bt);
 }
@@ -172,7 +178,7 @@ quit:
 
 static void prv_quit(char *buffer, void *user_data)
 {
-	artik_error ret = S_OK;
+	artik_error ret;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 		artik_request_api_module("bluetooth");
 
@@ -243,9 +249,9 @@ command_desc_t commands[] = {
 
 static int on_keyboard_received(int fd, enum watch_io id, void *user_data)
 {
-	char buffer[MAX_PACKET_SIZE];
+	char buffer[BUFFER_LEN];
 
-	if (fgets(buffer, MAX_PACKET_SIZE, stdin) == NULL)
+	if (fgets(buffer, BUFFER_LEN, stdin) == NULL)
 		return 1;
 	handle_command(commands, (char *) buffer);
 	fprintf(stdout, "\r\n");
@@ -255,9 +261,10 @@ static int on_keyboard_received(int fd, enum watch_io id, void *user_data)
 static void print_devices(artik_bt_device *devices, int num)
 {
 	int i = 0;
-	char *re_name;
 
 	for (i = 0; i < num; i++) {
+		char *re_name;
+
 		fprintf(stdout, "[Device]: %s\t",
 			devices[i].remote_address ? devices[i].
 			remote_address : "(null)");
@@ -295,20 +302,30 @@ static void on_bond(void *data, void *user_data)
 
 	if (paired) {
 		fprintf(stdout, "<FTP>: %s - %s\n", __func__, "Paired");
-		fprintf(stdout, "<FTP>: %s - start session\n", __func__);
 
 		if (bt->ftp_create_session(remote_address) != S_OK)
-			fprintf(stdout, "<FTP>: Start session error!\n");
+			fprintf(stdout, "<FTP>: call creat session error!\n");
 
-		fprintf(stdout, "<FTP>: Start session success!\n");
-		loop_main->add_fd_watch(STDIN_FILENO,
-			(WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP
-			| WATCH_IO_NVAL),
-			on_keyboard_received, NULL, NULL);
+		fprintf(stdout, "<FTP>: call creat session success!\n");
 	} else {
 		fprintf(stdout, "<FTP>: %s - %s\n", __func__, "Unpaired");
 	}
 	artik_release_api_module(bt);
+}
+
+static void on_connect(void *data, void *user_data)
+{
+	bool connected = *(bool *)data;
+
+	if (!connected) {
+		fprintf(stdout, "<FTP>: Start session error!\n");
+		return;
+	}
+	fprintf(stdout, "<FTP>: Start session success!\n");
+	loop_main->add_fd_watch(STDIN_FILENO,
+			(WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP
+			| WATCH_IO_NVAL),
+			on_keyboard_received, NULL, NULL);
 }
 
 static void user_callback(artik_bt_event event, void *data, void *user_data)
@@ -319,6 +336,9 @@ static void user_callback(artik_bt_event event, void *data, void *user_data)
 		break;
 	case BT_EVENT_BOND:
 		on_bond(data, user_data);
+		break;
+	case BT_EVENT_CONNECT:
+		on_connect(data, user_data);
 		break;
 	default:
 		break;
@@ -335,12 +355,12 @@ static void scan_timeout_callback(void *user_data)
 
 artik_error bluetooth_scan(void)
 {
+	artik_error ret;
+	int timeout_id = 0;
 	artik_loop_module *loop = (artik_loop_module *)
 		artik_request_api_module("loop");
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 		artik_request_api_module("bluetooth");
-	artik_error ret = S_OK;
-	int timeout_id = 0;
 
 	fprintf(stdout, "<FTP>: %s - starting\n", __func__);
 
@@ -362,10 +382,8 @@ artik_error bluetooth_scan(void)
 	loop->run();
 
 exit:
-	ret = bt->stop_scan();
-	ret = bt->unset_callback(BT_EVENT_SCAN);
-	fprintf(stdout, "<FTP>: %s - %s\n", __func__,
-		(ret == S_OK) ? "succeeded" : "failed");
+	bt->stop_scan();
+	bt->unset_callback(BT_EVENT_SCAN);
 
 	artik_release_api_module(loop);
 	artik_release_api_module(bt);
@@ -389,12 +407,17 @@ artik_error get_addr(char *remote_addr)
 
 static artik_error set_callback(char *remote_addr)
 {
+	artik_error ret;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 		artik_request_api_module("bluetooth");
-	artik_error ret = S_OK;
 
 	ret = bt->set_callback(BT_EVENT_BOND, user_callback,
 		(void *)remote_addr);
+	if (ret != S_OK)
+		goto exit;
+
+	ret = bt->set_callback(BT_EVENT_CONNECT, user_callback,
+			     (void *)remote_addr);
 	if (ret != S_OK)
 		goto exit;
 
@@ -405,6 +428,139 @@ static artik_error set_callback(char *remote_addr)
 exit:
 	artik_release_api_module(bt);
 	return ret;
+}
+
+static void ask(char *prompt, char *buf, int buf_len)
+{
+	printf("%s\n", prompt);
+
+	if (fgets(buf, buf_len, stdin) == NULL)
+		printf("Request Error\n");
+}
+
+static void m_request_pincode(
+			artik_bt_agent_request_handle handle,
+			char *device, void *user_data)
+{
+	char buffer[BUFFER_LEN];
+
+	printf("Request pincode (%s)\n", device);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Enter PIN Code: ", buffer, BUFFER_LEN);
+
+	bt->agent_send_pincode(handle, buffer);
+	artik_release_api_module(bt);
+}
+
+static void m_request_passkey(
+			artik_bt_agent_request_handle handle,
+			char *device, void *user_data)
+{
+	char buffer[BUFFER_LEN];
+	unsigned long passkey;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	printf("Request passkey (%s)\n", device);
+	ask("Enter passkey (1~999999): ", buffer, BUFFER_LEN);
+	passkey = strtoul(buffer, NULL, 10);
+
+	bt->agent_send_passkey(handle, passkey);
+	artik_release_api_module(bt);
+}
+
+static void m_request_confirmation(
+				artik_bt_agent_request_handle handle,
+				char *device, unsigned long passkey,
+				void *user_data)
+{
+	char buffer[BUFFER_LEN];
+
+	printf("Request confirmation (%s)\nPasskey: %06lu\n", device, passkey);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Confirm passkey? (yes/no): ", buffer, BUFFER_LEN);
+	if (!strncmp(buffer, "yes", 3))
+		bt->agent_send_empty_response(handle);
+	else
+		bt->agent_send_error(handle, BT_AGENT_REQUEST_REJECTED, "");
+
+	artik_release_api_module(bt);
+}
+
+static void m_request_authorization(
+				artik_bt_agent_request_handle handle,
+				char *device, void *user_data)
+{
+	char buffer[BUFFER_LEN];
+
+	printf("Request authorization (%s)\n", device);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Authorize? (yes/no): ", buffer, BUFFER_LEN);
+	if (!strncmp(buffer, "yes", 3))
+		bt->agent_send_empty_response(handle);
+	else
+		bt->agent_send_error(handle, BT_AGENT_REQUEST_REJECTED, "");
+
+	artik_release_api_module(bt);
+}
+
+static void m_authorize_service(
+					artik_bt_agent_request_handle handle,
+					char *device, char *uuid,
+					void *user_data)
+{
+	char buffer[BUFFER_LEN];
+
+	printf("Authorize Service (%s, %s)\n", device, uuid);
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+					artik_request_api_module("bluetooth");
+
+	ask("Authorize connection? (yes/no): ", buffer, BUFFER_LEN);
+	if (!strncmp(buffer, "yes", 3))
+		bt->agent_send_empty_response(handle);
+	else
+		bt->agent_send_error(handle, BT_AGENT_REQUEST_REJECTED, "");
+
+	artik_release_api_module(bt);
+}
+
+static artik_error agent_register(void)
+{
+	artik_error ret = S_OK;
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+			artik_request_api_module("bluetooth");
+	artik_loop_module *loop = (artik_loop_module *)
+			artik_request_api_module("loop");
+	artik_bt_agent_callbacks *m_callback =
+		(artik_bt_agent_callbacks *)
+		malloc(sizeof(artik_bt_agent_callbacks));
+	artik_bt_agent_capability g_capa = BT_CAPA_KEYBOARDDISPLAY;
+
+	memset(m_callback, 0, sizeof(artik_bt_agent_callbacks));
+	m_callback->authorize_service_func = m_authorize_service;
+	m_callback->request_authorization_func = m_request_authorization;
+	m_callback->request_confirmation_func = m_request_confirmation;
+	m_callback->request_passkey_func = m_request_passkey;
+	m_callback->request_pincode_func = m_request_pincode;
+
+	bt->set_discoverable(true);
+
+	printf("Invoke register...\n");
+
+	bt->agent_register_capability(g_capa);
+	bt->agent_set_default();
+
+	artik_release_api_module(loop);
+	artik_release_api_module(bt);
+	free(m_callback);
+	return ret;
+
 }
 
 int main(int argc, char *argv[])
@@ -429,6 +585,13 @@ int main(int argc, char *argv[])
 	loop_main = (artik_loop_module *) artik_request_api_module("loop");
 	if (!bt_main || !loop_main)
 		goto loop_quit;
+
+	ret = agent_register();
+	if (ret != S_OK) {
+		fprintf(stdout, "<FTP>: Agent register error!\n");
+		goto loop_quit;
+	}
+	fprintf(stdout, "<FTP>: Agent register success!\n");
 
 	ret = bluetooth_scan();
 	if (ret != S_OK) {

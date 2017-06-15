@@ -99,8 +99,8 @@ static artik_error test_time_loopback(void)
 	end = 1;
 
 	time_module_p->create_alarm_second(ARTIK_TIME_GMT1, 5, &handle_second, &_alarm_callback_1, NULL);
-	time_module_p->create_alarm_date(ARTIK_TIME_GMT1, alarm_date, &handle_date, &_alarm_callback_2, NULL);
-
+	time_module_p->create_alarm_date(ARTIK_TIME_GMT1, alarm_date, &handle_date, &_alarm_callback_2, NULL);	
+	
 	fprintf(stdout,
 		"Wait for the alarms...(Click on ctrl C for passing to next step)\n");
 

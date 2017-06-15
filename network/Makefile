@@ -1,11 +1,15 @@
-EXE_NAME := network-test
 
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
 	libartik-sdk-connectivity
 
-OBJS := \
+TEST_EXE_NAME := network-test
+TEST_OBJS := \
 	artik_network_test.o
+
+DHCP_CLIENT_EXE_NAME := dhcp-client
+DHCP_CLIENT_OBJS := \
+	artik_dhcp_client_test.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
@@ -22,10 +26,13 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(EXE_NAME): $(OBJS)
+$(TEST_EXE_NAME): $(TEST_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
-all: $(EXE_NAME)
+$(DHCP_CLIENT_EXE_NAME): $(DHCP_CLIENT_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+all: $(TEST_EXE_NAME) $(DHCP_CLIENT_EXE_NAME)
 
 clean:
-	rm -f *.o $(EXE_NAME)
+	rm -f *.o $(TEST_EXE_NAME) $(DHCP_CLIENT_EXE_NAME)

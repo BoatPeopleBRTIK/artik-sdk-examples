@@ -37,20 +37,20 @@ void _callback(void *user_data, artik_zigbee_response_type response_type,
 	log_dbg("In callback, response type : %d", response_type);
 
 	switch (response_type) {
-	case ZIGBEE_RESPONSE_NOTIFICATION:
+	case ARTIK_ZIGBEE_RESPONSE_NOTIFICATION:
 		notification = *((artik_zigbee_notification *) payload);
 		switch (notification) {
-		case ZIGBEE_CMD_SUCCESS:
-			log_info("In callback, ZIGBEE_CMD_SUCCESS");
+		case ARTIK_ZIGBEE_CMD_SUCCESS:
+			log_info("In callback, ARTIK_ZIGBEE_CMD_SUCCESS");
 			break;
-		case ZIGBEE_CMD_ERR_PORT_PROBLEM:
-		case ZIGBEE_CMD_ERR_NO_SUCH_COMMAND:
-		case ZIGBEE_CMD_ERR_WRONG_NUMBER_OF_ARGUMENTS:
-		case ZIGBEE_CMD_ERR_ARGUMENT_OUT_OF_RANGE:
-		case ZIGBEE_CMD_ERR_ARGUMENT_SYNTAX_ERROR:
-		case ZIGBEE_CMD_ERR_STRING_TOO_LONG:
-		case ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
-		case ZIGBEE_CMD_ERR:
+		case ARTIK_ZIGBEE_CMD_ERR_PORT_PROBLEM:
+		case ARTIK_ZIGBEE_CMD_ERR_NO_SUCH_COMMAND:
+		case ARTIK_ZIGBEE_CMD_ERR_WRONG_NUMBER_OF_ARGUMENTS:
+		case ARTIK_ZIGBEE_CMD_ERR_ARGUMENT_OUT_OF_RANGE:
+		case ARTIK_ZIGBEE_CMD_ERR_ARGUMENT_SYNTAX_ERROR:
+		case ARTIK_ZIGBEE_CMD_ERR_STRING_TOO_LONG:
+		case ARTIK_ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
+		case ARTIK_ZIGBEE_CMD_ERR:
 			log_err("In callback, COMMAND ERROR(%d)!", notification);
 			break;
 		default:
@@ -58,20 +58,20 @@ void _callback(void *user_data, artik_zigbee_response_type response_type,
 			break;
 		}
 		break;
-	case ZIGBEE_RESPONSE_NETWORK_NOTIFICATION:
+	case ARTIK_ZIGBEE_RESPONSE_NETWORK_NOTIFICATION:
 		network_notification = *((artik_zigbee_network_notification *) payload);
 		switch (network_notification) {
-		case ZIGBEE_NETWORK_JOIN:
-			log_info("In callback, ZIGBEE_NETWORK_JOIN");
+		case ARTIK_ZIGBEE_NETWORK_JOIN:
+			log_info("In callback, ARTIK_ZIGBEE_NETWORK_JOIN");
 			break;
-		case ZIGBEE_NETWORK_LEAVE:
-			log_info("In callback, ZIGBEE_NETWORK_LEAVE");
+		case ARTIK_ZIGBEE_NETWORK_LEAVE:
+			log_info("In callback, ARTIK_ZIGBEE_NETWORK_LEAVE");
 			break;
-		case ZIGBEE_NETWORK_FIND_JOIN_SUCCESS:
-			log_info("In callback, ZIGBEE_NETWORK_FIND_JOIN_SUCCESS");
+		case ARTIK_ZIGBEE_NETWORK_FIND_JOIN_SUCCESS:
+			log_info("In callback, ARTIK_ZIGBEE_NETWORK_FIND_JOIN_SUCCESS");
 			break;
-		case ZIGBEE_NETWORK_FIND_JOIN_FAILED:
-			log_warn("In callback, ZIGBEE_NETWORK_FIND_JOIN_FAILED");
+		case ARTIK_ZIGBEE_NETWORK_FIND_JOIN_FAILED:
+			log_warn("In callback, ARTIK_ZIGBEE_NETWORK_FIND_JOIN_FAILED");
 			break;
 		default:
 			log_dbg("In callback, response %d", network_notification);
@@ -103,77 +103,94 @@ static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 	return 1;
 }
 
-static artik_error _get_device_id(artik_zigbee_module *zb,
-								  const char *str_device_id,
-								  artik_zigbee_endpoint_handle *handle)
+static artik_error _get_device_info(artik_zigbee_module *zb,
+									const char *str_device_id,
+									ARTIK_ZIGBEE_PROFILE *profile,
+									int *endpoint_id,
+									ARTIK_ZIGBEE_DEVICEID *device_id)
 {
-	artik_error result;
+	if (NULL == profile || NULL == endpoint_id || NULL == device_id)
+		return E_INVALID_VALUE;
 
-	if (!strcmp(str_device_id, STR_ON_OFF_SWITCH))
-		result = zb->get_device(1, ZIGBEE_PROFILE_HA,
-								DEVICE_ON_OFF_SWITCH, handle);
-	else if (!strcmp(str_device_id, STR_ON_OFF_LIGHT))
-		result = zb->get_device(19, ZIGBEE_PROFILE_HA,
-								DEVICE_ON_OFF_LIGHT, handle);
-	else if (!strcmp(str_device_id, STR_DIMMABLE_LIGHT))
-		result = zb->get_device(20, ZIGBEE_PROFILE_HA,
-								DEVICE_DIMMABLE_LIGHT, handle);
-	else if (!strcmp(str_device_id, STR_LEVEL_CONTROL_SWITCH))
-		result = zb->get_device(2, ZIGBEE_PROFILE_HA,
-								DEVICE_LEVEL_CONTROL_SWITCH, handle);
-	else if (!strcmp(str_device_id, STR_COLOR_DIMMABLE_LIGHT))
-		result = zb->get_device(21, ZIGBEE_PROFILE_HA,
-								DEVICE_COLOR_DIMMABLE_LIGHT, handle);
-	else if (!strcmp(str_device_id, STR_ON_OFF_LIGHT_SWITCH))
-		result = zb->get_device(22, ZIGBEE_PROFILE_HA,
-								DEVICE_ON_OFF_LIGHT_SWITCH, handle);
-	else if (!strcmp(str_device_id, STR_DIMMER_SWITCH))
-		result = zb->get_device(23, ZIGBEE_PROFILE_HA,
-								DEVICE_DIMMER_SWITCH, handle);
-	else if (!strcmp(str_device_id, STR_COLOR_DIMMER_SWITCH))
-		result = zb->get_device(24, ZIGBEE_PROFILE_HA,
-								DEVICE_COLOR_DIMMER_SWITCH, handle);
-	else if (!strcmp(str_device_id, STR_LIGHT_SENSOR))
-		result = zb->get_device(25, ZIGBEE_PROFILE_HA,
-								DEVICE_LIGHT_SENSOR, handle);
-	else if (!strcmp(str_device_id, STR_OCCUPANCY_SENSOR))
-		result = zb->get_device(26, ZIGBEE_PROFILE_HA,
-								DEVICE_OCCUPANCY_SENSOR, handle);
-	else if (!strcmp(str_device_id, STR_HEATING_COOLING_UNIT))
-		result = zb->get_device(31, ZIGBEE_PROFILE_HA,
-								DEVICE_HEATING_COOLING_UNIT, handle);
-	else if (!strcmp(str_device_id, STR_THERMOSTAT))
-		result = zb->get_device(32, ZIGBEE_PROFILE_HA,
-								DEVICE_THERMOSTAT, handle);
-	else if (!strcmp(str_device_id, STR_TEMPERATURE_SENSOR))
-		result = zb->get_device(33, ZIGBEE_PROFILE_HA,
-								DEVICE_TEMPERATURE_SENSOR, handle);
-	else if (!strcmp(str_device_id, STR_REMOTE_CONTROL))
-		result = zb->get_device(34, ZIGBEE_PROFILE_HA,
-								DEVICE_REMOTE_CONTROL, handle);
-	else
+	if (!strcmp(str_device_id, STR_ON_OFF_SWITCH)) {
+		*endpoint_id = 1;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_ON_OFF_SWITCH;
+	} else if (!strcmp(str_device_id, STR_ON_OFF_LIGHT)) {
+		*endpoint_id = 19;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_ON_OFF_LIGHT;
+	} else if (!strcmp(str_device_id, STR_DIMMABLE_LIGHT)) {
+		*endpoint_id = 20;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_DIMMABLE_LIGHT;
+	} else if (!strcmp(str_device_id, STR_LEVEL_CONTROL_SWITCH)) {
+		*endpoint_id = 2;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_LEVEL_CONTROL_SWITCH;
+	} else if (!strcmp(str_device_id, STR_COLOR_DIMMABLE_LIGHT)) {
+		*endpoint_id = 21;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_COLOR_DIMMABLE_LIGHT;
+	} else if (!strcmp(str_device_id, STR_ON_OFF_LIGHT_SWITCH)) {
+		*endpoint_id = 22;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_ON_OFF_LIGHT_SWITCH;
+	} else if (!strcmp(str_device_id, STR_DIMMER_SWITCH)) {
+		*endpoint_id = 23;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_DIMMER_SWITCH;
+	} else if (!strcmp(str_device_id, STR_COLOR_DIMMER_SWITCH)) {
+		*endpoint_id = 24;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_COLOR_DIMMER_SWITCH;
+	} else if (!strcmp(str_device_id, STR_LIGHT_SENSOR)) {
+		*endpoint_id = 25;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_LIGHT_SENSOR;
+	} else if (!strcmp(str_device_id, STR_OCCUPANCY_SENSOR)) {
+		*endpoint_id = 26;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_OCCUPANCY_SENSOR;
+	} else if (!strcmp(str_device_id, STR_HEATING_COOLING_UNIT)) {
+		*endpoint_id = 31;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_HEATING_COOLING_UNIT;
+	} else if (!strcmp(str_device_id, STR_THERMOSTAT)) {
+		*endpoint_id = 32;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_THERMOSTAT;
+	} else if (!strcmp(str_device_id, STR_TEMPERATURE_SENSOR)) {
+		*endpoint_id = 33;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_TEMPERATURE_SENSOR;
+	} else if (!strcmp(str_device_id, STR_REMOTE_CONTROL)) {
+		*endpoint_id = 34;
+		*profile = ARTIK_ZIGBEE_PROFILE_HA;
+		*device_id = ARTIK_ZIGBEE_DEVICE_REMOTE_CONTROL;
+	} else
 		return E_BAD_ARGS;
 
-	return result;
+	return S_OK;
 }
 
 static void _print_network_status(int network_state)
 {
 	switch (network_state) {
-	case ZIGBEE_NO_NETWORK:
-		log_info("state ZIGBEE_NO_NETWORK");
+	case ARTIK_ZIGBEE_NO_NETWORK:
+		log_info("state ARTIK_ZIGBEE_NO_NETWORK");
 		break;
-	case ZIGBEE_JOINING_NETWORK:
-		log_info("state ZIGBEE_JOINING_NETWORK");
+	case ARTIK_ZIGBEE_JOINING_NETWORK:
+		log_info("state ARTIK_ZIGBEE_JOINING_NETWORK");
 		break;
-	case ZIGBEE_JOINED_NETWORK:
-		log_info("state ZIGBEE_JOINED_NETWORK");
+	case ARTIK_ZIGBEE_JOINED_NETWORK:
+		log_info("state ARTIK_ZIGBEE_JOINED_NETWORK");
 		break;
-	case ZIGBEE_JOINED_NETWORK_NO_PARENT:
-		log_info("state ZIGBEE_JOINED_NETWORK_NO_PARENT");
+	case ARTIK_ZIGBEE_JOINED_NETWORK_NO_PARENT:
+		log_info("state ARTIK_ZIGBEE_JOINED_NETWORK_NO_PARENT");
 		break;
-	case ZIGBEE_LEAVING_NETWORK:
-		log_info("state ZIGBEE_LEAVING_NETWORK");
+	case ARTIK_ZIGBEE_LEAVING_NETWORK:
+		log_info("state ARTIK_ZIGBEE_LEAVING_NETWORK");
 		break;
 	default:
 		break;
@@ -183,35 +200,34 @@ static void _print_network_status(int network_state)
 static void _print_node_type(int node_type)
 {
 	switch (node_type) {
-	case ZIGBEE_UNKNOWN_DEVICE:
-		log_info("node type ZIGBEE_UNKNOWN_DEVICE");
+	case ARTIK_ZIGBEE_UNKNOWN_DEVICE:
+		log_info("node type ARTIK_ZIGBEE_UNKNOWN_DEVICE");
 		break;
-	case ZIGBEE_COORDINATOR:
-		log_info("node type ZIGBEE_COORDINATOR");
+	case ARTIK_ZIGBEE_COORDINATOR:
+		log_info("node type ARTIK_ZIGBEE_COORDINATOR");
 		break;
-	case ZIGBEE_ROUTER:
-		log_info("node type ZIGBEE_ROUTER");
+	case ARTIK_ZIGBEE_ROUTER:
+		log_info("node type ARTIK_ZIGBEE_ROUTER");
 		break;
-	case ZIGBEE_END_DEVICE:
-		log_info("node type ZIGBEE_END_DEVICE");
+	case ARTIK_ZIGBEE_END_DEVICE:
+		log_info("node type ARTIK_ZIGBEE_END_DEVICE");
 		break;
-	case ZIGBEE_SLEEPY_END_DEVICE:
-		log_info("node type ZIGBEE_SLEEPY_END_DEVICE");
+	case ARTIK_ZIGBEE_SLEEPY_END_DEVICE:
+		log_info("node type ARTIK_ZIGBEE_SLEEPY_END_DEVICE");
 		break;
 	}
 }
 
 int main(int argc, char *argv[])
 {
+	artik_zigbee_local_endpoint_info endpoint_info;
 	artik_error ret = S_OK;
 	int i;
-	artik_zigbee_endpoint_handle device_list[MAX_ENDPOINT_SIZE];
 	artik_zigbee_network_state state;
 	artik_zigbee_node_type type;
-	int count = 0;
 
-	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
-	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
+	artik_loop_module *loop = NULL;
+	artik_zigbee_module *zb = NULL;
 
 	if (!artik_is_module_available(ARTIK_MODULE_ZIGBEE)) {
 		fprintf(stdout, "TEST: Zigbee module is not available, skipping test...\n");
@@ -225,33 +241,41 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
+	endpoint_info.count = 0;
 	if (argc > 1) {
-		if (argc > MAX_ENDPOINT_SIZE + 1)
+		if (argc > ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE + 1)
 			log_warn("only %d device type is supported currently!",
-															MAX_ENDPOINT_SIZE);
-		for (i = 1; i < argc && i < MAX_ENDPOINT_SIZE + 1; i++) {
+					ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE);
+		for (i = 1; i < argc && i < ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE + 1; i++) {
 			log_info("Device type is %s", argv[i]);
-			ret = _get_device_id(zb, argv[i], &device_list[count]);
+			ret = _get_device_info(zb, argv[i],
+					&endpoint_info.endpoints[endpoint_info.count].profile,
+					&endpoint_info.endpoints[endpoint_info.count].endpoint_id,
+					&endpoint_info.endpoints[endpoint_info.count].device_id);
 			if (ret != S_OK)
 				log_warn("not supported device type!!");
 			else
-				count++;
+				endpoint_info.count++;
 		}
+	}
 
-		if (count == 0)
-			ret = zb->initialize(_callback, NULL, 0, NULL);
-		else
-			ret = zb->initialize(_callback, NULL, count, device_list);
-	} else
-		ret = zb->initialize(_callback, NULL, 0, NULL);
-
-	if (ret == E_NOT_SUPPORTED) {
+	loop = (artik_loop_module *)artik_request_api_module("loop");
+	ret = zb->set_local_endpoint(&endpoint_info);
+	if (ret != S_OK) {
 		artik_release_api_module(loop);
 		artik_release_api_module(zb);
 		return -1;
 	}
 
-	if (zb->network_start(NULL) == ZIGBEE_JOINED_NETWORK) {
+	ret = zb->initialize(_callback, NULL);
+	if (ret != S_OK) {
+		artik_release_api_module(loop);
+		artik_release_api_module(zb);
+		return -1;
+	}
+
+	if (zb->network_start(NULL) == ARTIK_ZIGBEE_JOINED_NETWORK) {
 		ret = zb->network_request_my_network_status(&state);
 		if (ret == S_OK)
 			_print_network_status(state);
@@ -270,9 +294,7 @@ int main(int argc, char *argv[])
 
 	loop->run();
 
-	for (i = 0; i < count; i++)
-		zb->release_device(device_list[i]);
-
+	zb->deinitialize();
 	artik_release_api_module(loop);
 	artik_release_api_module(zb);
 

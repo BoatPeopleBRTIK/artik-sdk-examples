@@ -25,17 +25,17 @@
 #define NWK_FIND_MAX_SIZE			8
 
 static struct device_type device_types[] = {
-	{ ZIGBEE_PROFILE_HA, DEVICE_ON_OFF_SWITCH,
+	{ ARTIK_ZIGBEE_PROFILE_HA, ARTIK_ZIGBEE_DEVICE_ON_OFF_SWITCH,
 	  1, "On/Off Switch", "ON_OFF_SWITCH" },
-	{ ZIGBEE_PROFILE_HA, DEVICE_LEVEL_CONTROL_SWITCH,
+	{ ARTIK_ZIGBEE_PROFILE_HA, ARTIK_ZIGBEE_DEVICE_LEVEL_CONTROL_SWITCH,
 	  2, "Level Control Switch", "LEVEL_CONTROL_SWITCH" },
-	{ ZIGBEE_PROFILE_HA, DEVICE_ON_OFF_LIGHT,
+	{ ARTIK_ZIGBEE_PROFILE_HA, ARTIK_ZIGBEE_DEVICE_ON_OFF_LIGHT,
 	  19, "On/Off Light", "ON_OFF_LIGHT" },
-	{ ZIGBEE_PROFILE_HA, DEVICE_DIMMABLE_LIGHT,
+	{ ARTIK_ZIGBEE_PROFILE_HA, ARTIK_ZIGBEE_DEVICE_DIMMABLE_LIGHT,
 	  20, "Dimmable Light", "DIMMABLE_LIGHT" },
-	{ ZIGBEE_PROFILE_HA, DEVICE_LIGHT_SENSOR,
+	{ ARTIK_ZIGBEE_PROFILE_HA, ARTIK_ZIGBEE_DEVICE_LIGHT_SENSOR,
 	  25, "Light Sensor", "LIGHT_SENSOR" },
-	{ ZIGBEE_PROFILE_HA, DEVICE_REMOTE_CONTROL,
+	{ ARTIK_ZIGBEE_PROFILE_HA, ARTIK_ZIGBEE_DEVICE_REMOTE_CONTROL,
 	  34, "Remote Control", "REMOTE_CONTROL" },
 	{ -1, -1, -1, NULL, NULL}
 };
@@ -129,7 +129,7 @@ static artik_error _identify_test(artik_zigbee_module *zb)
 	if (is_supported == false)
 		return E_NOT_SUPPORTED;
 
-	zb->device_find_by_cluster(&endpoint_list, ZCL_IDENTIFY_CLUSTER_ID, 1);
+	zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_IDENTIFY_CLUSTER_ID, 1);
 
 	if (endpoint_list.num == 0) {
 		showln("There is no endpoint to send identify command");
@@ -213,7 +213,7 @@ static artik_error _onoff_test(artik_zigbee_module *zb)
 	if (is_supported == false)
 		return E_NOT_SUPPORTED;
 
-	zb->device_find_by_cluster(&endpoint_list, ZCL_ON_OFF_CLUSTER_ID, 1);
+	zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_ON_OFF_CLUSTER_ID, 1);
 	if (endpoint_list.num == 0) {
 		showln("There is no endpoint to send on/off command");
 		return E_ZIGBEE_ERROR;
@@ -230,7 +230,7 @@ static artik_error _onoff_test(artik_zigbee_module *zb)
 		for (j = 0; j < endpoint_list.num; j++) {
 			endpoint = &endpoint_list.endpoint[j];
 			ret = test_device->onoff_command(test_device->handle, endpoint,
-											 ZIGBEE_ONOFF_TOGGLE);
+											 ARTIK_ZIGBEE_ONOFF_TOGGLE);
 			if (ret == S_OK)
 				showln("On/off: send TOGGLE to node(0x%04X)",
 					   endpoint->node_id);
@@ -242,7 +242,7 @@ static artik_error _onoff_test(artik_zigbee_module *zb)
 			sleep(1);
 
 			ret = test_device->onoff_command(test_device->handle, endpoint,
-											 ZIGBEE_ONOFF_ON);
+											 ARTIK_ZIGBEE_ONOFF_ON);
 			if (ret == S_OK)
 				showln("On/off: send ON to node(0x%04X)", endpoint->node_id);
 			else {
@@ -253,7 +253,7 @@ static artik_error _onoff_test(artik_zigbee_module *zb)
 			sleep(1);
 
 			ret = test_device->onoff_command(test_device->handle, endpoint,
-											 ZIGBEE_ONOFF_OFF);
+											 ARTIK_ZIGBEE_ONOFF_OFF);
 			if (ret == S_OK)
 				showln("On/off: send OFF to node(0x%04X)",
 					   endpoint->node_id);
@@ -295,7 +295,7 @@ static artik_error _levelcontrol_test(artik_zigbee_module *zb, bool with_onoff)
 	if (is_supported == false)
 		return E_NOT_SUPPORTED;
 
-	zb->device_find_by_cluster(&endpoint_list, ZCL_LEVEL_CONTROL_CLUSTER_ID, 1);
+	zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_LEVEL_CONTROL_CLUSTER_ID, 1);
 	if (endpoint_list.num == 0) {
 		showln("There is no endpoint to send level control command");
 		return E_ZIGBEE_ERROR;
@@ -313,8 +313,8 @@ static artik_error _levelcontrol_test(artik_zigbee_module *zb, bool with_onoff)
 		for (j = 0; j < endpoint_list.num; j++) {
 			endpoint = &endpoint_list.endpoint[j];
 
-			cmd.control_type = with_onoff ? ZIGBEE_MOVE_TO_LEVEL_ONOFF :
-							   ZIGBEE_MOVE_TO_LEVEL;
+			cmd.control_type = with_onoff ? ARTIK_ZIGBEE_MOVE_TO_LEVEL_ONOFF :
+							   ARTIK_ZIGBEE_MOVE_TO_LEVEL;
 			cmd.parameters.move_to_level.level = 10;
 			cmd.parameters.move_to_level.transition_time = testing_transition_time;
 			ret = test_device->level_control_request(test_device->handle,
@@ -335,8 +335,8 @@ static artik_error _levelcontrol_test(artik_zigbee_module *zb, bool with_onoff)
 
 			sleep(2);
 
-			cmd.control_type = with_onoff ? ZIGBEE_MOVE_ONOFF : ZIGBEE_MOVE;
-			cmd.parameters.move.control_mode = ZIGBEE_LEVEL_CONTROL_UP;
+			cmd.control_type = with_onoff ? ARTIK_ZIGBEE_MOVE_ONOFF : ARTIK_ZIGBEE_MOVE;
+			cmd.parameters.move.control_mode = ARTIK_ZIGBEE_LEVEL_CONTROL_UP;
 			cmd.parameters.move.rate = 5;
 			ret = test_device->level_control_request(test_device->handle,
 													 endpoint, &cmd);
@@ -354,7 +354,7 @@ static artik_error _levelcontrol_test(artik_zigbee_module *zb, bool with_onoff)
 
 			sleep(5);
 
-			cmd.control_type = with_onoff ? ZIGBEE_STOP_ONOFF : ZIGBEE_STOP;
+			cmd.control_type = with_onoff ? ARTIK_ZIGBEE_STOP_ONOFF : ARTIK_ZIGBEE_STOP;
 			ret = test_device->level_control_request(test_device->handle, endpoint, &cmd);
 			if (ret == S_OK)
 				showln("Level control: send STOP %s for node(0x%04X)",
@@ -369,8 +369,8 @@ static artik_error _levelcontrol_test(artik_zigbee_module *zb, bool with_onoff)
 
 			sleep(2);
 
-			cmd.control_type = with_onoff ? ZIGBEE_STEP_ONOFF : ZIGBEE_STEP;
-			cmd.parameters.step.control_mode = ZIGBEE_LEVEL_CONTROL_DOWN;
+			cmd.control_type = with_onoff ? ARTIK_ZIGBEE_STEP_ONOFF : ARTIK_ZIGBEE_STEP;
+			cmd.parameters.step.control_mode = ARTIK_ZIGBEE_LEVEL_CONTROL_DOWN;
 			cmd.parameters.step.step_size = 10;
 			cmd.parameters.step.transition_time = testing_transition_time;
 			ret = test_device->level_control_request(test_device->handle,
@@ -389,7 +389,7 @@ static artik_error _levelcontrol_test(artik_zigbee_module *zb, bool with_onoff)
 
 			sleep(5);
 
-			cmd.control_type = with_onoff ? ZIGBEE_STOP_ONOFF : ZIGBEE_STOP;
+			cmd.control_type = with_onoff ? ARTIK_ZIGBEE_STOP_ONOFF : ARTIK_ZIGBEE_STOP;
 			ret = test_device->level_control_request(test_device->handle,
 													 endpoint, &cmd);
 			if (ret == S_OK)
@@ -523,7 +523,7 @@ static artik_error _do_basic_remote_control(artik_zigbee_module *zb)
 	if (is_supported == false)
 		return E_NOT_SUPPORTED;
 
-	zb->device_find_by_cluster(&endpoint_list, ZCL_BASIC_CLUSTER_ID, 1);
+	zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_BASIC_CLUSTER_ID, 1);
 	if (endpoint_list.num == 0) {
 		showln("There is no endpoint for basic remote control");
 		return E_ZIGBEE_ERROR;
@@ -587,20 +587,20 @@ static artik_error _stop_reporting(artik_zigbee_reporting_type reporting_type)
 	zb = (artik_zigbee_module *) artik_request_api_module("zigbee");
 
 	switch (reporting_type) {
-	case ZIGBEE_REPORTING_MEASURED_TEMPERATURE:
-		zb->device_find_by_cluster(&endpoint_list, ZCL_TEMP_MEASUREMENT_CLUSTER_ID, 1);
+	case ARTIK_ZIGBEE_REPORTING_MEASURED_TEMPERATURE:
+		zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_TEMP_MEASUREMENT_CLUSTER_ID, 1);
 		break;
 
-	case ZIGBEE_REPORTING_MEASURED_ILLUMINANCE:
-		zb->device_find_by_cluster(&endpoint_list, ZCL_ILLUM_MEASUREMENT_CLUSTER_ID, 1);
+	case ARTIK_ZIGBEE_REPORTING_MEASURED_ILLUMINANCE:
+		zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_ILLUM_MEASUREMENT_CLUSTER_ID, 1);
 		break;
 
-	case ZIGBEE_REPORTING_OCCUPANCY_SENSING:
-		zb->device_find_by_cluster(&endpoint_list, ZCL_OCCUPANCY_SENSING_CLUSTER_ID, 1);
+	case ARTIK_ZIGBEE_REPORTING_OCCUPANCY_SENSING:
+		zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_OCCUPANCY_SENSING_CLUSTER_ID, 1);
 		break;
 
-	case ZIGBEE_REPORTING_THERMOSTAT_TEMPERATURE:
-		zb->device_find_by_cluster(&endpoint_list, ZCL_THERMOSTAT_CLUSTER_ID,
+	case ARTIK_ZIGBEE_REPORTING_THERMOSTAT_TEMPERATURE:
+		zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_THERMOSTAT_CLUSTER_ID,
 								   1);
 		break;
 
@@ -629,7 +629,7 @@ static artik_error _stop_reporting(artik_zigbee_reporting_type reporting_type)
 
 			ret = test_device->stop_reporting(test_device->handle, endpoint,
 											  reporting_type);
-			if (ret != ZIGBEE_CMD_SUCCESS)
+			if (ret != ARTIK_ZIGBEE_CMD_SUCCESS)
 				showln("Failed to stop reporting %d for result: %d",
 					   reporting_type, ret);
 			else
@@ -670,7 +670,7 @@ static artik_error _measured_illuminance_reporting_test(artik_zigbee_module *zb)
 	if (is_supported == false)
 		return E_NOT_SUPPORTED;
 
-	zb->device_find_by_cluster(&endpoint_list, ZCL_ILLUM_MEASUREMENT_CLUSTER_ID,
+	zb->device_find_by_cluster(&endpoint_list, ARTIK_ZCL_ILLUM_MEASUREMENT_CLUSTER_ID,
 							   1);
 	if (endpoint_list.num == 0) {
 		showln("There is no endpoint to request measured illuminance reporting");
@@ -689,9 +689,9 @@ static artik_error _measured_illuminance_reporting_test(artik_zigbee_module *zb)
 		for (j = 0; j < endpoint_list.num; j++) {
 			endpoint = &endpoint_list.endpoint[j];
 
-			ret = test_device->request_reporting(test_device->handle, endpoint, ZIGBEE_REPORTING_MEASURED_ILLUMINANCE,
+			ret = test_device->request_reporting(test_device->handle, endpoint, ARTIK_ZIGBEE_REPORTING_MEASURED_ILLUMINANCE,
 								min_interval, max_interval, illuminance);
-			if (ret != ZIGBEE_CMD_SUCCESS)
+			if (ret != ARTIK_ZIGBEE_CMD_SUCCESS)
 				showln("Failed to request measured illuminance reporting for result: %d", ret);
 			else
 				showln("Success to request measured illuminance reporting to node 0x%04x", endpoint->node_id);
@@ -1223,7 +1223,7 @@ static void _func_network_show(artik_zigbee_module *zb)
 	ret = zb->network_request_my_network_status(&state);
 	if (ret == S_OK) {
 		show_network_status(state);
-		if (state != ZIGBEE_NO_NETWORK) {
+		if (state != ARTIK_ZIGBEE_NO_NETWORK) {
 			network = true;
 			ret = zb->device_request_my_node_type(&type);
 			if (ret == S_OK)
@@ -1403,7 +1403,7 @@ static void _func_network(char *input, int max_size)
 	case 0:
 		if (network_started == false) {
 			ret = zb->network_start(&state);
-			if (ret == S_OK && state == ZIGBEE_JOINED_NETWORK)
+			if (ret == S_OK && state == ARTIK_ZIGBEE_JOINED_NETWORK)
 				showln("Former Network Resumed");
 			network_started = true;
 		}
@@ -1617,29 +1617,21 @@ static void _func_network(char *input, int max_size)
 	artik_release_api_module(zb);
 }
 
-static artik_error _func_endpoint_add(artik_zigbee_module *zb, int profile,
-									  int device_id, int endpoint_id)
+static artik_error _func_endpoint_add(artik_zigbee_module *zb, ARTIK_ZIGBEE_PROFILE profile,
+									  ARTIK_ZIGBEE_DEVICEID device_id, int endpoint_id)
 {
 	struct test_device *test_device;
-	artik_zigbee_endpoint_handle handle;
 	artik_error result = S_OK;
 
-	result = zb->get_device(endpoint_id, profile, device_id, &handle);
-	if (result != S_OK) {
-		log_err("Get device failed");
-		return result;
-	}
-
-	test_device = add_test_device(handle, endpoint_id);
+	test_device = add_test_device(profile, device_id, endpoint_id);
 	if (test_device == NULL) {
-		zb->release_device(handle);
 		log_err("Create test device failed");
 		return E_NO_MEM;
 	}
 
-	if (profile == ZIGBEE_PROFILE_HA) {
+	if (profile == ARTIK_ZIGBEE_PROFILE_HA) {
 		switch (device_id) {
-		case DEVICE_ON_OFF_SWITCH:
+		case ARTIK_ZIGBEE_DEVICE_ON_OFF_SWITCH:
 			test_device->identify_request = device_on_off_switch_func.identify_request;
 			test_device->identify_get_remaining_time = device_on_off_switch_func.identify_get_remaining_time;
 			test_device->onoff_command = device_on_off_switch_func.onoff_command;
@@ -1647,7 +1639,7 @@ static artik_error _func_endpoint_add(artik_zigbee_module *zb, int profile,
 			test_device->ezmode_commissioning_initiator_stop = device_on_off_switch_func.ezmode_commissioning_initiator_stop;
 			break;
 
-		case DEVICE_LEVEL_CONTROL_SWITCH:
+		case ARTIK_ZIGBEE_DEVICE_LEVEL_CONTROL_SWITCH:
 			test_device->identify_request = device_level_control_switch_func.identify_request;
 			test_device->identify_get_remaining_time = device_level_control_switch_func.identify_get_remaining_time;
 			test_device->onoff_command = device_level_control_switch_func.onoff_command;
@@ -1656,16 +1648,16 @@ static artik_error _func_endpoint_add(artik_zigbee_module *zb, int profile,
 			test_device->ezmode_commissioning_initiator_stop = device_level_control_switch_func.ezmode_commissioning_initiator_stop;
 			break;
 
-		case DEVICE_ON_OFF_LIGHT:
-			test_device->groups_name_support = device_on_off_light_func.groups_name_support;
-			test_device->groups_set_local_name_support= device_on_off_light_func.groups_set_local_name_support;
+		case ARTIK_ZIGBEE_DEVICE_ON_OFF_LIGHT:
+			test_device->groups_get_local_name_support = device_on_off_light_func.groups_get_local_name_support;
+			test_device->groups_set_local_name_support = device_on_off_light_func.groups_set_local_name_support;
 			test_device->onoff_get_value = device_on_off_light_func.onoff_get_value;
 			test_device->ezmode_commissioning_target_start = device_on_off_light_func.ezmode_commissioning_target_start;
 			test_device->ezmode_commissioning_target_stop = device_on_off_light_func.ezmode_commissioning_target_stop;
 			break;
 
-		case DEVICE_DIMMABLE_LIGHT:
-			test_device->groups_name_support = device_dimmable_light_func.groups_name_support;
+		case ARTIK_ZIGBEE_DEVICE_DIMMABLE_LIGHT:
+			test_device->groups_get_local_name_support = device_dimmable_light_func.groups_get_local_name_support;
 			test_device->groups_set_local_name_support = device_dimmable_light_func.groups_set_local_name_support;
 			test_device->onoff_get_value = device_dimmable_light_func.onoff_get_value;
 			test_device->level_control_get_value = device_dimmable_light_func.level_control_get_value;
@@ -1673,7 +1665,7 @@ static artik_error _func_endpoint_add(artik_zigbee_module *zb, int profile,
 			test_device->ezmode_commissioning_target_stop = device_dimmable_light_func.ezmode_commissioning_target_stop;
 			break;
 
-		case DEVICE_LIGHT_SENSOR:
+		case ARTIK_ZIGBEE_DEVICE_LIGHT_SENSOR:
 			test_device->identify_request = device_light_sensor_func.identify_request;
 			test_device->identify_get_remaining_time = device_light_sensor_func.identify_get_remaining_time;
 			test_device->illum_set_measured_value = device_light_sensor_func.illum_set_measured_value;
@@ -1684,7 +1676,7 @@ static artik_error _func_endpoint_add(artik_zigbee_module *zb, int profile,
 			break;
 
 
-		case DEVICE_REMOTE_CONTROL:
+		case ARTIK_ZIGBEE_DEVICE_REMOTE_CONTROL:
 			test_device->reset_to_factory_default = device_remote_control_func.reset_to_factory_default;
 			test_device->identify_request = device_remote_control_func.identify_request;
 			test_device->identify_get_remaining_time = device_remote_control_func.identify_get_remaining_time;
@@ -1706,28 +1698,42 @@ static artik_error _func_endpoint_add(artik_zigbee_module *zb, int profile,
 		result = E_BAD_ARGS;
 	}
 
-	if (result != S_OK) {
-		zb->release_device(handle);
+	if (result != S_OK)
 		delete_test_device(endpoint_id);
-	}
 
 	return result;
 }
 
 static artik_error _func_endpoint_init(artik_zigbee_module *zb)
 {
-	artik_zigbee_endpoint_handle handle_list[MAX_ENDPOINT_SIZE];
-	int size;
+	artik_zigbee_endpoint_handle handle_list[ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE];
+	artik_zigbee_local_endpoint_info endpoint_info;
+	int i = 0, size = 0;
 	artik_error ret = E_ZIGBEE_ERROR;
+	struct test_device *device = NULL;
 
-	get_test_device_list(handle_list, MAX_ENDPOINT_SIZE, &size);
-	if (size == 0) {
+	get_test_device_list(handle_list, ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE, &size);
+	if (size <= 0) {
 		log_err("device list is NULL");
 		return E_ZIGBEE_NO_DEVICE;
 	}
 
-	ret = zb->initialize(_on_callback, NULL, size, handle_list);
-	if (ret != S_OK)
+	memset(&endpoint_info, 0, sizeof(artik_zigbee_local_endpoint_info));
+	for (i = 0; i < size; i++) {
+		device = get_test_device(i);
+		if (NULL != device) {
+			endpoint_info.endpoints[endpoint_info.count].profile = device->profile;
+			endpoint_info.endpoints[endpoint_info.count].endpoint_id = device->endpoint_id;
+			endpoint_info.endpoints[endpoint_info.count].device_id = device->device_id;
+			endpoint_info.count++;
+		}
+	}
+	ret = zb->set_local_endpoint(&endpoint_info);
+	if (S_OK != ret)
+		log_err("Set local endpoint error %d", ret);
+
+	ret = zb->initialize(_on_callback, NULL);
+	if (S_OK != ret)
 		log_err("Initialize error %d", ret);
 	return ret;
 }
@@ -1821,6 +1827,72 @@ static void _func_endpoint(char *input, int max_size)
 	artik_release_api_module(zb);
 }
 
+static void _func_entrance(char *input, int max_size)
+{
+	static int step;
+	static artik_zigbee_local_endpoint_info endpoint_info;
+	artik_zigbee_local_endpoint local_ep;
+	artik_zigbee_module *zb;
+	artik_error ret = S_OK;
+	int i = 0, n = 0;
+
+	if (NULL == input)
+		step = 0;
+
+	zb = (artik_zigbee_module *) artik_request_api_module("zigbee");
+	switch (step) {
+	case 0:
+		memset(&endpoint_info, 0, sizeof(artik_zigbee_local_endpoint_info));
+		ret = zb->get_local_endpoint(&endpoint_info);
+		if (S_OK == ret && endpoint_info.count > 0) {
+			showln("Found %d saved local endpoints", endpoint_info.count);
+			for (i = 0; i < endpoint_info.count; i++) {
+				local_ep = endpoint_info.endpoints[i];
+				showln("Profile 0x%04X endpoint %d device id 0x%04X", local_ep.profile,
+						local_ep.endpoint_id, local_ep.device_id);
+			}
+			show_hyphen();
+			showln("0: Resume device");
+			showln("1: Add new device");
+			show_select();
+			step = 1;
+		} else
+			_func_entry(_func_endpoint);
+		break;
+
+	case 1: /* Select to resume device or add new device */
+		n = read_int(input, max_size, -1);
+		if (0 == n) {
+			show_hyphen();
+			showln("Resume device");
+			for (i = 0; i < endpoint_info.count; i++) {
+				local_ep = endpoint_info.endpoints[i];
+				ret = _func_endpoint_add(zb, local_ep.profile, local_ep.device_id,
+						local_ep.endpoint_id);
+				if (S_OK == ret)
+					showln("Added endpoint %d", local_ep.endpoint_id);
+				else
+					showln("Add endpoint %d failed: %s", local_ep.endpoint_id, error_msg(ret));
+			}
+
+			ret = _func_endpoint_init(zb);
+			if (S_OK != ret) {
+				artik_release_api_module(zb);
+				exit_loop();
+				return;
+			}
+
+			_func_entry(_func_network);
+		} else if (1 == n)
+			_func_entry(_func_endpoint);
+		else
+			show_retry();
+		break;
+	}
+
+	artik_release_api_module(zb);
+}
+
 void _on_callback_attr_changed(artik_zigbee_attribute_changed_response *info)
 {
 	struct test_device *device;
@@ -1833,14 +1905,14 @@ void _on_callback_attr_changed(artik_zigbee_attribute_changed_response *info)
 		log_err("Invalid endpoint id: %d", info->endpoint_id);
 
 	switch (info->type) {
-	case ZIGBEE_ATTR_ONOFF_STATUS:
+	case ARTIK_ZIGBEE_ATTR_ONOFF_STATUS:
 		if (device->onoff_get_value != NULL) {
 			ret = device->onoff_get_value(device->handle, &status);
 			if (ret == S_OK) {
-				if (status == ZIGBEE_ONOFF_ON)
+				if (status == ARTIK_ZIGBEE_ONOFF_ON)
 					showln("Attribute ONOFF changed to ON by ep(%d)",
 						   info->endpoint_id);
-				else if (status == ZIGBEE_ONOFF_OFF)
+				else if (status == ARTIK_ZIGBEE_ONOFF_OFF)
 					showln("Attribute ONOFF changed to OFF by ep(%d)",
 						   info->endpoint_id);
 				else
@@ -1853,7 +1925,7 @@ void _on_callback_attr_changed(artik_zigbee_attribute_changed_response *info)
 			log_err("Not support onoff_get_value by ep(%d)", info->endpoint_id);
 		break;
 
-	case ZIGBEE_ATTR_LEVELCONTROL_LEVEL:
+	case ARTIK_ZIGBEE_ATTR_LEVELCONTROL_LEVEL:
 		if (device->level_control_get_value != NULL) {
 			ret = device->level_control_get_value(device->handle, &n);
 			if (ret == S_OK)
@@ -1880,49 +1952,49 @@ static void _on_level_control_command_callback(artik_zigbee_level_control_comman
 			level_control->control_type);
 
 	switch (level_control->control_type) {
-	case ZIGBEE_MOVE_TO_LEVEL:
+	case ARTIK_ZIGBEE_MOVE_TO_LEVEL:
 		showln("Move to level %d transition time %d",
 				level_control->parameters.move_to_level.level,
 				level_control->parameters.move_to_level.transition_time);
 		break;
 
-	case ZIGBEE_MOVE:
+	case ARTIK_ZIGBEE_MOVE:
 		showln("Move mode %d rate %d",
 				level_control->parameters.move.control_mode,
 				level_control->parameters.move.rate);
 		break;
 
-	case ZIGBEE_STEP:
+	case ARTIK_ZIGBEE_STEP:
 		showln("Step mode %d step size %d transition time %d",
 				level_control->parameters.step.control_mode,
 				level_control->parameters.step.step_size,
 				level_control->parameters.step.transition_time);
 		break;
 
-	case ZIGBEE_STOP:
+	case ARTIK_ZIGBEE_STOP:
 		showln("Stop");
 		break;
 
-	case ZIGBEE_MOVE_TO_LEVEL_ONOFF:
+	case ARTIK_ZIGBEE_MOVE_TO_LEVEL_ONOFF:
 		showln("On/off move to level %d transition time %d",
 				level_control->parameters.move_to_level.level,
 				level_control->parameters.move_to_level.transition_time);
 		break;
 
-	case ZIGBEE_MOVE_ONOFF:
+	case ARTIK_ZIGBEE_MOVE_ONOFF:
 		showln("On/off move mode %d rate %d",
 				level_control->parameters.move.control_mode,
 				level_control->parameters.move.rate);
 		break;
 
-	case ZIGBEE_STEP_ONOFF:
+	case ARTIK_ZIGBEE_STEP_ONOFF:
 		showln("On/off step mode %d step size %d transition time %d",
 				level_control->parameters.step.control_mode,
 				level_control->parameters.step.step_size,
 				level_control->parameters.step.transition_time);
 		break;
 
-	case ZIGBEE_STOP_ONOFF:
+	case ARTIK_ZIGBEE_STOP_ONOFF:
 		showln("On/off stop");
 		break;
 	}
@@ -1954,24 +2026,24 @@ static void _on_callback(void *user_data,
 
 	zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 	switch (response_type) {
-	case ZIGBEE_RESPONSE_IEEE_ADDR_RESP:
+	case ARTIK_ZIGBEE_RESPONSE_IEEE_ADDR_RESP:
 		memcpy(&addr_rsp, payload, sizeof(artik_zigbee_ieee_addr_response));
 
-		if (addr_rsp.result == ZIGBEE_SERVICE_DISCOVERY_SUCCESS) {
+		if (addr_rsp.result == ARTIK_ZIGBEE_SERVICE_DISCOVERY_DONE) {
 			show("Ieee address response node id 0x%04x, eui64 ",
 					addr_rsp.node_id);
 			show("%02x", addr_rsp.eui64[0]);
-			for (i = 1; i < EUI64_SIZE; i++)
+			for (i = 1; i < ARTIK_ZIGBEE_EUI64_SIZE; i++)
 				show(":%02x", addr_rsp.eui64[i]);
 			showln("");
 		} else
 			showln("Ieee address response fail for result %d", addr_rsp.result);
 		break;
-	case ZIGBEE_RESPONSE_SIMPLE_DESC_RESP:
+	case ARTIK_ZIGBEE_RESPONSE_SIMPLE_DESC_RESP:
 		memcpy(&simple_descriptor, payload,
 				sizeof(artik_zigbee_simple_descriptor_response));
 
-		if (simple_descriptor.result == ZIGBEE_SERVICE_DISCOVERY_SUCCESS) {
+		if (simple_descriptor.result == ARTIK_ZIGBEE_SERVICE_DISCOVERY_DONE) {
 			showln("Simple descriptor response target node id 0x%04x, target endpoint %d",
 					simple_descriptor.target_node_id,
 					simple_descriptor.target_endpoint);
@@ -1989,34 +2061,34 @@ static void _on_callback(void *user_data,
 			showln("Simple descriptor response fail for result %d",
 					simple_descriptor.result);
 		break;
-	case ZIGBEE_RESPONSE_MATCH_DESC_RESP:
+	case ARTIK_ZIGBEE_RESPONSE_MATCH_DESC_RESP:
 		match_desc = (artik_zigbee_match_desc_response *) payload;
-		if (match_desc->result == ZIGBEE_SERVICE_DISCOVERY_RECEIVED) {
+		if (match_desc->result == ARTIK_ZIGBEE_SERVICE_DISCOVERY_RECEIVED) {
 			showln("Match description received node id 0x%04x, eui64 ",
 					match_desc->node_id, match_desc->count);
 			for (i = 0; i < match_desc->count; i++)
 				showln("endpoint %d", match_desc->endpoint_list[i]);
-		} else if (match_desc->result == ZIGBEE_SERVICE_DISCOVERY_SUCCESS)
+		} else if (match_desc->result == ARTIK_ZIGBEE_SERVICE_DISCOVERY_DONE)
 			showln("match description response complete");
 		else
 			showln("match description response fail for result %d",
 					match_desc->result);
 		break;
-	case ZIGBEE_RESPONSE_NOTIFICATION:
+	case ARTIK_ZIGBEE_RESPONSE_NOTIFICATION:
 		notification = *((artik_zigbee_notification *) payload);
 		switch (notification) {
-		case ZIGBEE_CMD_SUCCESS:
+		case ARTIK_ZIGBEE_CMD_SUCCESS:
 			showln("NOTIFICATION: SUCCESS");
 			break;
 
-		case ZIGBEE_CMD_ERR_PORT_PROBLEM:
-		case ZIGBEE_CMD_ERR_NO_SUCH_COMMAND:
-		case ZIGBEE_CMD_ERR_WRONG_NUMBER_OF_ARGUMENTS:
-		case ZIGBEE_CMD_ERR_ARGUMENT_OUT_OF_RANGE:
-		case ZIGBEE_CMD_ERR_ARGUMENT_SYNTAX_ERROR:
-		case ZIGBEE_CMD_ERR_STRING_TOO_LONG:
-		case ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
-		case ZIGBEE_CMD_ERR:
+		case ARTIK_ZIGBEE_CMD_ERR_PORT_PROBLEM:
+		case ARTIK_ZIGBEE_CMD_ERR_NO_SUCH_COMMAND:
+		case ARTIK_ZIGBEE_CMD_ERR_WRONG_NUMBER_OF_ARGUMENTS:
+		case ARTIK_ZIGBEE_CMD_ERR_ARGUMENT_OUT_OF_RANGE:
+		case ARTIK_ZIGBEE_CMD_ERR_ARGUMENT_SYNTAX_ERROR:
+		case ARTIK_ZIGBEE_CMD_ERR_STRING_TOO_LONG:
+		case ARTIK_ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
+		case ARTIK_ZIGBEE_CMD_ERR:
 			showln("NOTIFICATION: ERROR(%d)", notification);
 			break;
 
@@ -2026,10 +2098,10 @@ static void _on_callback(void *user_data,
 		}
 		break;
 
-	case ZIGBEE_RESPONSE_NETWORK_NOTIFICATION:
+	case ARTIK_ZIGBEE_RESPONSE_NETWORK_NOTIFICATION:
 		network_notification = *((artik_zigbee_network_notification *) payload);
 		switch (network_notification) {
-		case ZIGBEE_NETWORK_JOIN:
+		case ARTIK_ZIGBEE_NETWORK_JOIN:
 			showln("NETWORK_NOTIFICATION: JOIN");
 			if (!conducted_by_commissioning) {
 				showln("Device discovering ...");
@@ -2039,26 +2111,26 @@ static void _on_callback(void *user_data,
 			}
 			break;
 
-		case ZIGBEE_NETWORK_LEAVE:
+		case ARTIK_ZIGBEE_NETWORK_LEAVE:
 			showln("NETWORK_NOTIFICATION: LEAVE");
 			break;
 
-		case ZIGBEE_NETWORK_EXIST:
+		case ARTIK_ZIGBEE_NETWORK_EXIST:
 			showln("NETWORK_NOTIFICATION: Network exist, please leave current network and try again");
 			break;
 
-		case ZIGBEE_NETWORK_FIND_FORM_SUCCESS:
+		case ARTIK_ZIGBEE_NETWORK_FIND_FORM_SUCCESS:
 			showln("NETWORK_NOTIFICATION: FIND FORM SUCCESS");
 			ret = zb->network_permitjoin(EASY_PJOIN_DURATION);
 			if (ret != S_OK)
 				log_err("zigbee_network_permitjoin failed:%s", error_msg(ret));
 			break;
 
-		case ZIGBEE_NETWORK_FIND_FORM_FAILED:
+		case ARTIK_ZIGBEE_NETWORK_FIND_FORM_FAILED:
 			showln("NETWORK_NOTIFICATION: FIND FORM FAILED");
 			break;
 
-		case ZIGBEE_NETWORK_FIND_JOIN_SUCCESS:
+		case ARTIK_ZIGBEE_NETWORK_FIND_JOIN_SUCCESS:
 			showln("NETWORK_NOTIFICATION: FIND JOIN SUCCESS");
 			if (!conducted_by_commissioning) {
 				showln("Device discovering ...");
@@ -2068,7 +2140,7 @@ static void _on_callback(void *user_data,
 			}
 			break;
 
-		case ZIGBEE_NETWORK_FIND_JOIN_FAILED:
+		case ARTIK_ZIGBEE_NETWORK_FIND_JOIN_FAILED:
 			showln("NETWORK_NOTIFICATION: FIND JOIN FAILED");
 			break;
 
@@ -2078,10 +2150,10 @@ static void _on_callback(void *user_data,
 		}
 		break;
 
-	case ZIGBEE_RESPONSE_NETWORK_FIND:
+	case ARTIK_ZIGBEE_RESPONSE_NETWORK_FIND:
 		net_find = (artik_zigbee_network_find_result *)payload;
 		switch (net_find->find_status) {
-		case ZIGBEE_NETWORK_FOUND:
+		case ARTIK_ZIGBEE_NETWORK_FOUND:
 			if (nwk_find_size < NWK_FIND_MAX_SIZE) {
 				memcpy(&nwk_found_list[nwk_find_size], net_find,
 						sizeof(artik_zigbee_network_find_result));
@@ -2095,13 +2167,13 @@ static void _on_callback(void *user_data,
 				showln("Network found out of max size %d", NWK_FIND_MAX_SIZE);
 			break;
 
-		case ZIGBEE_NETWORK_FIND_FINISHED:
+		case ARTIK_ZIGBEE_NETWORK_FIND_FINISHED:
 			showln("Network find finished");
 			if (current_func == _func_network_find_join)
 				_func_network_found_end_show();
 			break;
 
-		case ZIGBEE_NETWORK_FIND_ERR:
+		case ARTIK_ZIGBEE_NETWORK_FIND_ERR:
 			showln("Network find error");
 			if (current_func == _func_network_find_join) {
 				_func_network_found_show();
@@ -2115,35 +2187,35 @@ static void _on_callback(void *user_data,
 		}
 		break;
 
-	case ZIGBEE_RESPONSE_DEVICE_DISCOVER:
+	case ARTIK_ZIGBEE_RESPONSE_DEVICE_DISCOVER:
 		device_discovery = (artik_zigbee_device_discovery *) payload;
 		switch (device_discovery->status) {
-		case ZIGBEE_DEVICE_DISCOVERY_START:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_START:
 			showln("Device discovery start");
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_FOUND:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_FOUND:
 			showln("Device discovery found:");
 			show_device(&(device_discovery->device));
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_IN_PROGRESS:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_IN_PROGRESS:
 			showln("Device discovery in progress");
 			showln("Done");
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_DONE:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_DONE:
 			showln("Done");
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_NO_DEVICE:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_NO_DEVICE:
 			showln("Device discovery no device");
 			showln("Done");
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_ERROR:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_ERROR:
 			showln("Device discovery error");
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_CHANGED:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_CHANGED:
 			showln("Device discovery changed:");
 			show_device(&(device_discovery->device));
 			break;
-		case ZIGBEE_DEVICE_DISCOVERY_LOST:
+		case ARTIK_ZIGBEE_DEVICE_DISCOVERY_LOST:
 			showln("Device discovery lost:");
 			show_device(&(device_discovery->device));
 			break;
@@ -2154,23 +2226,23 @@ static void _on_callback(void *user_data,
 		}
 		break;
 
-	case ZIGBEE_RESPONSE_GROUPS_INFO:
+	case ARTIK_ZIGBEE_RESPONSE_GROUPS_INFO:
 		group_info = (artik_zigbee_groups_info *)payload;
 		showln("GROUPS: group ID(%d) cmd(%d)",
 			   group_info->group_id, group_info->group_cmd);
 
 		switch (group_info->group_cmd) {
-		case ZIGBEE_GROUPS_ADD_IF_IDENTIFYING:
-			showln("ZIGBEE_GROUPS_ADD_IF_IDENTIFYING");
+		case ARTIK_ZIGBEE_GROUPS_ADD_IF_IDENTIFYING:
+			showln("ARTIK_ZIGBEE_GROUPS_ADD_IF_IDENTIFYING");
 			break;
-		case ZIGBEE_GROUPS_ADD:
-			showln("ZIGBEE_GROUPS_ADD");
+		case ARTIK_ZIGBEE_GROUPS_ADD:
+			showln("ARTIK_ZIGBEE_GROUPS_ADD");
 			break;
-		case ZIGBEE_GROUPS_REMOVE:
-			showln("ZIGBEE_GROUPS_REMOVE");
+		case ARTIK_ZIGBEE_GROUPS_REMOVE:
+			showln("ARTIK_ZIGBEE_GROUPS_REMOVE");
 			break;
-		case ZIGBEE_GROUPS_REMOVE_ALL:
-			showln("ZIGBEE_GROUPS_REMOVE_ALL");
+		case ARTIK_ZIGBEE_GROUPS_REMOVE_ALL:
+			showln("ARTIK_ZIGBEE_GROUPS_REMOVE_ALL");
 			break;
 		default:
 			showln("Groups command not support");
@@ -2181,10 +2253,10 @@ static void _on_callback(void *user_data,
 			break;
 		}
 
-		ret = test_device->groups_name_support(test_device->handle,
+		ret = test_device->groups_get_local_name_support(test_device->handle,
 											   group_info->endpoint_id);
 		if (ret == S_OK) {
-			showln("ZIGBEE_GROUPS: name supported by ep(%d)",
+			showln("ARTIK_ZIGBEE_GROUPS: name supported by ep(%d)",
 					 group_info->endpoint_id);
 			ret = test_device->groups_set_local_name_support(test_device->handle, false);
 			if (ret != S_OK) {
@@ -2193,7 +2265,7 @@ static void _on_callback(void *user_data,
 				showln("Setting local groups name support attribute value to FALSE succeeded");
 		}
 		else if (ret == E_NOT_SUPPORTED) {
-			showln("ZIGBEE_GROUPS: name not supported by ep(%d)",
+			showln("ARTIK_ZIGBEE_GROUPS: name not supported by ep(%d)",
 					 group_info->endpoint_id);
 			ret = test_device->groups_set_local_name_support(test_device->handle, true);
 			if (ret != S_OK) {
@@ -2202,48 +2274,48 @@ static void _on_callback(void *user_data,
 				showln("Setting local groups name support attribute value to TRUE succeeded");
 		}
 		else
-			showln("ZIGBEE_GROUPS: get name support failed: %s",
+			showln("ARTIK_ZIGBEE_GROUPS: get name support failed: %s",
 					 error_msg(ret));
 		break;
 
-	case ZIGBEE_RESPONSE_ATTRIBUTE_CHANGE:
+	case ARTIK_ZIGBEE_RESPONSE_ATTRIBUTE_CHANGE:
 		_on_callback_attr_changed((artik_zigbee_attribute_changed_response *)payload);
 		break;
 
-	case ZIGBEE_RESPONSE_RECEIVE_COMMAND:
+	case ARTIK_ZIGBEE_RESPONSE_CLIENT_TO_SERVER_COMMAND_RECEIVED:
 		received_command = (artik_zigbee_received_command *)payload;
 		if (received_command->is_global_command)
-			log_dbg("receive global command:0x%02X endpoint:%d cluster:0x%04X",
+			showln("receive global command:0x%02X endpoint:%d cluster:0x%04X",
 				received_command->command_id,
-				received_command->endpoint_id,
+				received_command->dest_endpoint_id,
 				received_command->cluster_id);
-		else if (received_command->endpoint_id == ZIGBEE_BROADCAST_ENDPOINT)
-			log_dbg("receive broadcast command cluster:0x%04X command:0x%02X",
+		else if (received_command->dest_endpoint_id == ARTIK_ZIGBEE_BROADCAST_ENDPOINT)
+			showln("receive broadcast command cluster:0x%04X command:0x%02X",
 				received_command->cluster_id,
 				received_command->command_id);
 		else
-			log_dbg("receive command endpoint:%d cluster:0x%04X command:0x%02X",
-				received_command->endpoint_id,
+			showln("receive command endpoint:%d cluster:0x%04X command:0x%02X",
+				received_command->dest_endpoint_id,
 				received_command->cluster_id,
 				received_command->command_id);
 		if (received_command->payload_length > 0)
-			log_dbg("receive command:0x%02X payload length is %d",
+			showln("receive command:0x%02X payload length is %d",
 				received_command->command_id,
 				received_command->payload_length);
 		else if (received_command->payload_length == 0)
-			log_dbg("receive command:0x%02X payload is empty",
+			showln("receive command:0x%02X payload is empty",
 				received_command->command_id);
 		else if (received_command->payload_length == -1)
-			log_err("receive command:0x%02X payload length over:%d",
+			showln("receive command:0x%02X payload length over:%d",
 				received_command->command_id,
-				MAX_RECEIVED_COMMAND_PLAYLOAD_LENGTH);
+				ARTIK_ZIGBEE_MAX_RECEIVED_COMMAND_PLAYLOAD_LENGTH);
 		else
-			log_err("receive command:0x%02X unrecognized payload length is %d",
+			showln("receive command:0x%02X unrecognized payload length is %d",
 				received_command->command_id,
 				received_command->payload_length);
 		break;
 
-	case ZIGBEE_RESPONSE_REPORTING_CONFIGURE:
+	case ARTIK_ZIGBEE_RESPONSE_REPORTING_CONFIGURE:
 		reporting_info = (artik_zigbee_reporting_info *)payload;
 		if (reporting_info->used == true)
 			showln("get reporting configure ep:%d cluster:%d attr:%d min_interval:%d max_interval:%d reportable_change:%d",
@@ -2262,15 +2334,15 @@ static void _on_callback(void *user_data,
 				   reporting_info->reported.reportable_change);
 		break;
 
-	case ZIGBEE_RESPONSE_REPORT_ATTRIBUTE:
+	case ARTIK_ZIGBEE_RESPONSE_REPORT_ATTRIBUTE:
 		report_attr_info = (artik_zigbee_report_attribute_info *)payload;
 		switch (report_attr_info->attribute_type) {
-		case ZIGBEE_ATTR_ILLUMINANCE:
+		case ARTIK_ZIGBEE_ATTR_ILLUMINANCE:
 			showln("Report attribute: Illuminance: %d",
 				   report_attr_info->data.value);
 			reporting_measured_illum_count++;
 			if (reporting_measured_illum_count > REPORTING_MAX_COUNT) {
-				_stop_reporting(ZIGBEE_REPORTING_MEASURED_ILLUMINANCE);
+				_stop_reporting(ARTIK_ZIGBEE_REPORTING_MEASURED_ILLUMINANCE);
 				reporting_measured_illum_count = 0;
 			}
 			break;
@@ -2280,80 +2352,80 @@ static void _on_callback(void *user_data,
 		}
 		break;
 
-	case ZIGBEE_RESPONSE_IDENTIFY_FEEDBACK_START:
+	case ARTIK_ZIGBEE_RESPONSE_IDENTIFY_FEEDBACK_START:
 		identify_info = (artik_zigbee_identify_feedback_info *)payload;
 		showln("Identify feedback start with %d seconds by ep(%d)",
 			   identify_info->duration, identify_info->endpoint_id);
 		break;
 
-	case ZIGBEE_RESPONSE_IDENTIFY_FEEDBACK_STOP:
+	case ARTIK_ZIGBEE_RESPONSE_IDENTIFY_FEEDBACK_STOP:
 		identify_info = (artik_zigbee_identify_feedback_info *)payload;
 		showln("Identify feedback stop by ep(%d)", identify_info->endpoint_id);
 		break;
 
-	case ZIGBEE_RESPONSE_COMMISSIONING_STATUS:
+	case ARTIK_ZIGBEE_RESPONSE_COMMISSIONING_STATUS:
 		commissioning_state = *((artik_zigbee_commissioning_state *) payload);
 		switch (commissioning_state) {
-		case COMMISSIONING_ERROR:
+		case ARTIK_ZIGBEE_COMMISSIONING_ERROR:
 			showln("Commissioning: error");
 			showln("Done");
 			break;
-		case COMMISSIONING_ERR_IN_PROGRESS:
+		case ARTIK_ZIGBEE_COMMISSIONING_ERR_IN_PROGRESS:
 			showln("Commissioning: error in progress");
 			showln("Done");
 			break;
-		case COMMISSIONING_NETWORK_STEERING_FORM:
+		case ARTIK_ZIGBEE_COMMISSIONING_NETWORK_STEERING_FORM:
 			showln("Commissioning: network steering form");
 			break;
-		case COMMISSIONING_NETWORK_STEERING_SUCCESS:
+		case ARTIK_ZIGBEE_COMMISSIONING_NETWORK_STEERING_SUCCESS:
 			showln("Commissioning: network steering success");
 			break;
-		case COMMISSIONING_NETWORK_STEERING_FAILED:
+		case ARTIK_ZIGBEE_COMMISSIONING_NETWORK_STEERING_FAILED:
 			showln("Commissioning: network steering failed");
 			break;
-		case COMMISSIONING_WAIT_NETWORK_STEERING:
+		case ARTIK_ZIGBEE_COMMISSIONING_WAIT_NETWORK_STEERING:
 			showln("Commissioning: wait for network steering");
 			break;
-		case COMMISSIONING_INITIATOR_SUCCESS:
+		case ARTIK_ZIGBEE_COMMISSIONING_INITIATOR_SUCCESS:
 			_commissioning_initiator_run(zb, CS_INITIATOR_SUCCESS);
 			break;
-		case COMMISSIONING_INITIATOR_FAILED:
+		case ARTIK_ZIGBEE_COMMISSIONING_INITIATOR_FAILED:
 			_commissioning_initiator_run(zb, CS_INITIATOR_FAILED);
 			break;
-		case COMMISSIONING_INITIATOR_STOP:
+		case ARTIK_ZIGBEE_COMMISSIONING_INITIATOR_STOP:
 			showln("Commissioning: initiator stopped");
 			showln("Done");
 			break;
-		case COMMISSIONING_TARGET_SUCCESS:
+		case ARTIK_ZIGBEE_COMMISSIONING_TARGET_SUCCESS:
 			_commissioning_target_run(zb, CS_TARGET_SUCCESS);
 			break;
-		case COMMISSIONING_TARGET_FAILED:
+		case ARTIK_ZIGBEE_COMMISSIONING_TARGET_FAILED:
 			_commissioning_target_run(zb, CS_TARGET_FAILED);
 			break;
-		case COMMISSIONING_TARGET_STOP:
+		case ARTIK_ZIGBEE_COMMISSIONING_TARGET_STOP:
 			showln("Commissioning: target stopped");
 			showln("Done");
 			break;
 		}
 		break;
 
-	case ZIGBEE_RESPONSE_COMMISSIONING_TARGET_INFO:
+	case ARTIK_ZIGBEE_RESPONSE_COMMISSIONING_TARGET_INFO:
 		target_info = (artik_zigbee_commissioning_target_info *)payload;
 		showln("Commissioning: found target id:0x%04X, endpoint:%d",
 			   target_info->node_id, target_info->endpoint_id);
 		break;
 
-	case ZIGBEE_RESPONSE_COMMISSIONING_BOUND_INFO:
+	case ARTIK_ZIGBEE_RESPONSE_COMMISSIONING_BOUND_INFO:
 		bound_info = (artik_zigbee_commissioning_bound_info *)payload;
 		showln("Commissioning: bound target endpoint:%d, clusterId:0x%04X",
 			   bound_info->endpoint_id, bound_info->cluster_id);
 		break;
 
-	case ZIGBEE_RESPONSE_BASIC_RESET_TO_FACTORY:
+	case ARTIK_ZIGBEE_RESPONSE_BASIC_RESET_TO_FACTORY:
 		showln("Basic reset to factory defauts by endpoint %d", *((int *) payload));
 		break;
 
-	case ZIGBEE_RESPONSE_LEVEL_CONTROL:
+	case ARTIK_ZIGBEE_RESPONSE_LEVEL_CONTROL:
 		_on_level_control_command_callback((artik_zigbee_level_control_command *) payload);
 		break;
 
@@ -2425,7 +2497,7 @@ int main(int argc, char *argv[])
 	zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
 	loop = (artik_loop_module *)artik_request_api_module("loop");
 
-	_func_entry(_func_endpoint);
+	_func_entry(_func_entrance);
 
 	io = (WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP | WATCH_IO_NVAL);
 	loop->add_fd_watch(STDIN_FILENO, io, _on_keyboard_received, NULL, NULL);
