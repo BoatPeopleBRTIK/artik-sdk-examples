@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <signal.h>
 #include <sys/select.h>
 #include <stdio.h>
@@ -11,8 +29,6 @@
 #include <artik_platform.h>
 #include <artik_serial.h>
 #include <artik_loop.h>
-
-#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
 /*
  * This is a loopback test. On Artik 520 development platform,
@@ -31,13 +47,14 @@ static artik_serial_config config = {
 };
 
 static artik_serial_handle handle = NULL;
-static const char* current_test = NULL;
+static const char *current_test = NULL;
 #define MAX_RX_BUF	64
 
 static void signal_handler(int signum)
 {
 	if (signum == SIGALRM) {
-		fprintf(stderr, "TEST: %s failed, timeout expired\n", current_test);
+		fprintf(stderr, "TEST: %s failed, timeout expired\n",
+			current_test);
 		exit(-1);
 	}
 }
@@ -49,7 +66,7 @@ static void set_timeout(const char *test_name, unsigned int seconds)
 	alarm(seconds);
 }
 
-static void unset_timeout()
+static void unset_timeout(void)
 {
 	alarm(0);
 	signal(SIGALRM, SIG_DFL);
@@ -60,8 +77,10 @@ static void forward_data(void *param, unsigned char *buf, int len)
 	if (buf != NULL)
 		fprintf(stdout, "Forward read: %s\n", buf);
 	else {
-		artik_serial_module *serial = (artik_serial_module *)artik_request_api_module("serial");
-		artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+		artik_serial_module *serial = (artik_serial_module *)
+					artik_request_api_module("serial");
+		artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 
 		serial->unset_received_callback(handle);
 		loop->quit();
@@ -73,8 +92,10 @@ static void forward_data(void *param, unsigned char *buf, int len)
 
 static artik_error test_serial_loopback(int platid)
 {
-	artik_serial_module *serial = (artik_serial_module *)artik_request_api_module("serial");
-	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+	artik_serial_module *serial = (artik_serial_module *)
+					artik_request_api_module("serial");
+	artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 	artik_error ret = S_OK;
 	char tx_buf[] = "This is a test buffer containing test data\0";
 	int tx_len = strlen(tx_buf);
@@ -108,19 +129,19 @@ static artik_error test_serial_loopback(int platid)
 	set_timeout(__func__, 5);
 	/* Send test data */
 	len = tx_len;
-	ret = serial->write(handle, (unsigned char*)tx_buf, &len);
+	ret = serial->write(handle, (unsigned char *)tx_buf, &len);
 	if (ret != S_OK) {
-		fprintf(stderr, "TEST: %s failed to send data (%d)\n", __func__, ret);
+		fprintf(stderr, "TEST: %s failed to send data (%d)\n", __func__,
+			ret);
 		goto exit;
 	}
 
 	fprintf(stdout, "TEST: with read\n");
 	len = 128;
 	while (maxlen < tx_len) {
-		ret = serial->read(handle, (unsigned char*)buff+maxlen, &len);
-		if (ret != S_OK) {
+		ret = serial->read(handle, (unsigned char *)buff+maxlen, &len);
+		if (ret != S_OK)
 			maxlen += len;
-		}
 	}
 	fprintf(stdout, "buff : %s\n", buff);
 	fprintf(stdout, "TEST: with callback\n");
@@ -128,11 +149,12 @@ static artik_error test_serial_loopback(int platid)
 	char tx_bufs[] = "This is a second test\0";
 
 	tx_len = strlen(tx_bufs);
-	ret = serial->write(handle, (unsigned char*)tx_bufs, &tx_len);
+	ret = serial->write(handle, (unsigned char *)tx_bufs, &tx_len);
 	ret = serial->set_received_callback(handle, forward_data, NULL);
 	loop->run();
 	if (ret != S_OK) {
-		fprintf(stderr, "TEST: %s failed while waiting for RX data (%d)\n", __func__, ret);
+		fprintf(stderr, "TEST: %s failed while waiting for RX data\n"
+			"(%d)\n", __func__, ret);
 		goto exit;
 	}
 	serial->unset_received_callback(handle);
@@ -154,15 +176,15 @@ int main(void)
 	int platid = artik_get_platform();
 
 	if (!artik_is_module_available(ARTIK_MODULE_SERIAL)) {
-		fprintf(stdout, "TEST: Serial module is not available, skipping test...\n");
+		fprintf(stdout, "TEST: Serial module is not available,\n"
+			"skipping test...\n");
 		return -1;
 	}
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710) || (platid == ARTIK530)) {
+	if ((platid == ARTIK520) || (platid == ARTIK1020) ||
+				(platid == ARTIK710) || (platid == ARTIK530)) {
 		ret = test_serial_loopback(platid);
-		CHECK_RET(ret);
 	}
 
-exit:
 	return (ret == S_OK) ? 0 : -1;
 }

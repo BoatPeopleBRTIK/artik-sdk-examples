@@ -1,8 +1,29 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <gio/gio.h>
+#pragma GCC diagnostic pop
 #include <stdbool.h>
 #include <errno.h>
 #include <signal.h>
@@ -20,12 +41,12 @@
 
 static artik_loop_module *loop_main;
 
-typedef void (*signal_fuc)(int);
-
-void uninit(int signal)
+static int uninit(void *user_data)
 {
 	fprintf(stdout, "<FTP>: Process cancel\n");
 	loop_main->quit();
+
+	return true;
 }
 
 static void prop_callback(artik_bt_event event, void *data, void *user_data)
@@ -35,7 +56,7 @@ static void prop_callback(artik_bt_event event, void *data, void *user_data)
 	fprintf(stdout, "Name: %s\n", p->name);
 	fprintf(stdout, "File Name: %s\n", p->file_name);
 	fprintf(stdout, "Status: %s\t", p->status);
-	fprintf(stdout, "Size: %"PRIu64"/%"PRIu64"\n", p->transfered, p->size);
+	fprintf(stdout, "Size: %llu %llu\n", p->transfered, p->size);
 }
 
 static void prv_list(char *buffer, void *user_data)
@@ -56,9 +77,9 @@ static void prv_list(char *buffer, void *user_data)
 		fprintf(stdout, "Type: %s\t", file_list->file_type);
 		fprintf(stdout, "Permission: %s\t", file_list->file_permission);
 		if (file_list->size < 10)
-			fprintf(stdout, "Size: %"PRIu64"\t\t", file_list->size);
+			fprintf(stdout, "Size: %llu\t\t", file_list->size);
 		else
-			fprintf(stdout, "Size: %"PRIu64"\t", file_list->size);
+			fprintf(stdout, "Size: %llu\t", file_list->size);
 		fprintf(stdout, "Name: %s\n", file_list->file_name);
 		file_list = file_list->next_file;
 	}
@@ -266,23 +287,17 @@ static void print_devices(artik_bt_device *devices, int num)
 		char *re_name;
 
 		fprintf(stdout, "[Device]: %s\t",
-			devices[i].remote_address ? devices[i].
-			remote_address : "(null)");
-		re_name = (devices[i].remote_name ? devices[i].
-			remote_name : "(null)");
+			devices[i].remote_address ? devices[i].remote_address : "(null)");
+		re_name = (devices[i].remote_name ? devices[i].remote_name : "(null)");
 		if (strlen(re_name) < 8) {
 			fprintf(stdout, "%s\t\t",
-				devices[i].remote_name ? devices[i].
-				remote_name : "(null)");
-			}
-		else{
+				devices[i].remote_name ? devices[i].remote_name : "(null)");
+		} else {
 			fprintf(stdout, "%s\t",
-				devices[i].remote_name ? devices[i].
-				remote_name : "(null)");
-			}
+				devices[i].remote_name ? devices[i].remote_name : "(null)");
+		}
 		fprintf(stdout, "RSSI: %d\t", devices[i].rssi);
-		fprintf(stdout, "Bonded: %s\n",
-			devices[i].is_bonded ? "true" : "false");
+		fprintf(stdout, "Bonded: %s\n",	devices[i].is_bonded ? "true" : "false");
 	}
 }
 
@@ -459,7 +474,7 @@ static void m_request_passkey(
 			char *device, void *user_data)
 {
 	char buffer[BUFFER_LEN];
-	unsigned long passkey;
+	unsigned int passkey;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 					artik_request_api_module("bluetooth");
 
@@ -473,12 +488,12 @@ static void m_request_passkey(
 
 static void m_request_confirmation(
 				artik_bt_agent_request_handle handle,
-				char *device, unsigned long passkey,
+				char *device, unsigned int passkey,
 				void *user_data)
 {
 	char buffer[BUFFER_LEN];
 
-	printf("Request confirmation (%s)\nPasskey: %06lu\n", device, passkey);
+	printf("Request confirmation (%s)\nPasskey: %06u\n", device, passkey);
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 					artik_request_api_module("bluetooth");
 
@@ -566,7 +581,6 @@ static artik_error agent_register(void)
 int main(int argc, char *argv[])
 {
 	artik_error ret = S_OK;
-	signal_fuc signal_uninit = uninit;
 	char remote_address[MAX_BDADDR_LEN] = "";
 	artik_bluetooth_module *bt_main = NULL;
 
@@ -612,7 +626,7 @@ int main(int argc, char *argv[])
 	}
 
 	bt_main->start_bond(remote_address);
-	signal(SIGINT, signal_uninit);
+	loop_main->add_signal_watch(SIGINT, uninit, NULL, NULL);
 	loop_main->run();
 
 loop_quit:

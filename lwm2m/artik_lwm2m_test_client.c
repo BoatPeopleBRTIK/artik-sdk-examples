@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -12,7 +30,7 @@
 
 #define UNUSED __attribute__((unused))
 
-#define URI_MAX_LEN		128
+#define URI_MAX_LEN	128
 #define UUID_MAX_LEN	64
 #define DATA_MAX_LEN	1024
 #define MAX_PACKET_SIZE 1024
@@ -21,8 +39,10 @@ artik_loop_module *loop;
 artik_lwm2m_module *lwm2m;
 
 static int g_quit;
-static char akc_device_id[UUID_MAX_LEN] = "< DM enabled Artik Cloud device ID >";
-static char akc_device_token[UUID_MAX_LEN] = "< DM enabled Artik Cloud device token >";
+static char akc_device_id[UUID_MAX_LEN] = "< DM enabled Artik"\
+					" Cloud device ID >";
+static char akc_device_token[UUID_MAX_LEN] = "< DM enabled Artik"\
+					" Cloud device token >";
 static char akc_uri[URI_MAX_LEN] = "coaps://coaps-api.artik.cloud:5686";
 
 static void prv_change_obj(char *buffer, void *user_data)
@@ -44,7 +64,8 @@ static void prv_change_obj(char *buffer, void *user_data)
 	if (result != S_OK)
 		goto syntax_error;
 
-	result = lwm2m->client_write_resource(handle, uri, (unsigned char *)data,
+	result = lwm2m->client_write_resource(handle, uri,
+			(unsigned char *)data,
 			strlen(data));
 	if (result != S_OK)
 		log_err("client change object failed (%s)", error_msg(result));
@@ -71,7 +92,8 @@ void prv_read_obj(char *buffer, void *user_data)
 	if (result != S_OK)
 		goto syntax_error;
 
-	result = lwm2m->client_read_resource(handle, uri, (unsigned char *)data, &len);
+	result = lwm2m->client_read_resource(handle, uri, (unsigned char *)data,
+							&len);
 	if (result != S_OK) {
 		log_err("read change object failed (%s)", error_msg(result));
 		return;
@@ -93,10 +115,12 @@ static void prv_quit(UNUSED char *buffer, UNUSED void *user_data)
 }
 
 struct command_desc_t commands[] = {
-				{ "change", "Change the value of a resource.", NULL, prv_change_obj, NULL },
-				{ "read", "Read the value of a resource", NULL, prv_read_obj, NULL },
-				{ "q", "Quit the client.", NULL, prv_quit, NULL },
-				{ NULL, NULL, NULL, NULL, NULL } };
+	{ "change", "Change the value of a resource.", NULL, prv_change_obj,
+									NULL },
+	{ "read", "Read the value of a resource", NULL, prv_read_obj, NULL },
+	{ "q", "Quit the client.", NULL, prv_quit, NULL },
+	{ NULL, NULL, NULL, NULL, NULL }
+};
 
 static int on_keyboard_received(int fd, enum watch_io io,
 		UNUSED void *user_data)
@@ -129,7 +153,7 @@ static int on_keyboard_received(int fd, enum watch_io io,
 
 static void on_error(void *data, void *user_data)
 {
-	artik_error err = (artik_error)data;
+	artik_error err = (artik_error)(intptr_t)data;
 
 	fprintf(stdout, "LWM2M error: %s\r\n", error_msg(err));
 }
@@ -159,27 +183,33 @@ static void test_serialization(artik_lwm2m_handle handle)
 	fprintf(stdout, "TEST: %s starting\n", __func__);
 	res = lwm2m->serialize_tlv_int(test_int, 2, &buffer_int, &len_int);
 	if (res == S_OK) {
-		fprintf(stdout, "Send to 'Error Code' (/3/0/11) multiple integer [0, 1]\n");
-		res = lwm2m->client_write_resource(handle, "/3/0/11", buffer_int, len_int);
-		fprintf(stdout, "result of serialization int sent : %s\n", error_msg(res));
+		fprintf(stdout, "Send to 'Error Code' (/3/0/11)"\
+			" multiple integer [0, 1]\n");
+		res = lwm2m->client_write_resource(handle, "/3/0/11",
+							buffer_int, len_int);
+		fprintf(stdout, "result of serialization int sent : %s\n",
+								error_msg(res));
 		if (buffer_int)
 			free(buffer_int);
-	} else {
-		fprintf(stdout, "Failed to serialize array of int : %s\n", error_msg(res));
-	}
+	} else
+		fprintf(stdout, "Failed to serialize array of int : %s\n",
+								error_msg(res));
 	res = lwm2m->serialize_tlv_string(test_str, 2, &buffer_str, &len_str);
 	if (res == S_OK) {
-		fprintf(stdout, "Send to 'Address' (/4/0/4) multiple string ['192.168.1.27', '192.168.1.67']\n");
-		res = lwm2m->client_write_resource(handle, "/4/0/4", buffer_str, len_str);
-		fprintf(stdout, "result of serialization string sent : %s\n", error_msg(res));
+		fprintf(stdout, "Send to 'Address' (/4/0/4) multiple string"\
+					" ['192.168.1.27', '192.168.1.67']\n");
+		res = lwm2m->client_write_resource(handle, "/4/0/4", buffer_str,
+								len_str);
+		fprintf(stdout, "result of serialization string sent : %s\n",
+								error_msg(res));
 		if (buffer_int)
 			free(buffer_str);
-	} else {
-		fprintf(stdout, "Failed to serialize array of string : %s\n", error_msg(res));
-	}
+	} else
+		fprintf(stdout, "Failed to serialize array of string : %s\n",
+								error_msg(res));
 }
 
-artik_error test_lwm2m_default()
+artik_error test_lwm2m_default(void)
 {
 	artik_error ret = S_OK;
 	artik_lwm2m_handle client_h = NULL;
@@ -205,12 +235,16 @@ artik_error test_lwm2m_default()
 
 	/* Fill up objects */
 	config.objects[ARTIK_LWM2M_OBJECT_CONNECTIVITY_MONITORING] =
-		lwm2m->create_connectivity_monitoring_object(0, 0, 12, 1, 2, (const char **)ips,
-							     2, (const char **)routes, 0, "SAMI2_5G",
-							     2345, 189, 33);
+		lwm2m->create_connectivity_monitoring_object(0, 0, 12, 1, 2,
+						(const char **)ips,
+						2, (const char **)routes, 0,
+						"SAMI2_5G",
+						2345, 189, 33);
 	config.objects[ARTIK_LWM2M_OBJECT_DEVICE] =
-		lwm2m->create_device_object("Samsung", "Artik", "1234567890", "1.0", "1.0", "1.0", "HUB", 0,
-					     5000, 1500, 100, 1000000, 200000, "Europe/Paris", "+01:00", "U");
+		lwm2m->create_device_object("Samsung", "Artik", "1234567890",
+					"1.0", "1.0", "1.0", "HUB", 0,
+					5000, 1500, 100, 1000000, 200000,
+					"Europe/Paris", "+01:00", "U");
 
 	ret = lwm2m->client_connect(&client_h, &config);
 	test_serialization(client_h);
@@ -222,15 +256,18 @@ artik_error test_lwm2m_default()
 
 	lwm2m->set_callback(client_h, ARTIK_LWM2M_EVENT_ERROR, on_error,
 			(void *)client_h);
-	lwm2m->set_callback(client_h, ARTIK_LWM2M_EVENT_RESOURCE_EXECUTE, on_execute_resource,
+	lwm2m->set_callback(client_h, ARTIK_LWM2M_EVENT_RESOURCE_EXECUTE,
+			on_execute_resource,
 			(void *)client_h);
-	lwm2m->set_callback(client_h, ARTIK_LWM2M_EVENT_RESOURCE_CHANGED, on_changed_resource,
+	lwm2m->set_callback(client_h, ARTIK_LWM2M_EVENT_RESOURCE_CHANGED,
+			on_changed_resource,
 			(void *)client_h);
 
 	fprintf(stdout, "TEST: %s add watch\n", __func__);
 
 	loop->add_fd_watch(STDIN_FILENO,
-			(WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP | WATCH_IO_NVAL),
+			(WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP |
+								WATCH_IO_NVAL),
 			on_keyboard_received, client_h, &watch_id);
 
 	printf(">");
@@ -265,7 +302,8 @@ int main(UNUSED int argc, UNUSED char *argv[])
 		default:
 			fprintf(stdout, "Usage: lwm2m-test <options>\r\n");
 			fprintf(stdout, "\tOptions:\r\n");
-			fprintf(stdout, "\t\t-u URI of server (e.g. \"coaps://lwm2mserv.com:5683\")\r\n");
+			fprintf(stdout, "\t\t-u URI of server (e.g. \""\
+				"coaps://lwm2mserv.com:5683\")\r\n");
 			fprintf(stdout, "\t\t-i PSK Public identity\r\n");
 			fprintf(stdout, "\t\t-k PSK Secret key\r\n");
 			return 0;
@@ -274,13 +312,15 @@ int main(UNUSED int argc, UNUSED char *argv[])
 
 	if (!artik_is_module_available(ARTIK_MODULE_LOOP)) {
 		fprintf(stdout,
-				"TEST: Loop module is not available, skipping test...\n");
+				"TEST: Loop module is not available,"\
+				" skipping test...\n");
 		return -1;
 	}
 
 	if (!artik_is_module_available(ARTIK_MODULE_LWM2M)) {
 		fprintf(stdout,
-				"TEST: LWM2M module is not available, skipping test...\n");
+				"TEST: LWM2M module is not available,"\
+				" skipping test...\n");
 		return -1;
 	}
 

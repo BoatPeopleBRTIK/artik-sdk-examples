@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -21,8 +39,6 @@ static artik_loop_module *loop_main;
 
 static char buffer[BUFFER_SIZE];
 
-typedef void (*signal_fuc)(int);
-
 static void release_handler(void *user_data)
 {
 	fprintf(stdout, "<SPP>: Release_handler called\n");
@@ -31,9 +47,9 @@ static void release_handler(void *user_data)
 static int on_keyboard_received(int fd, enum watch_io id, void *user_data)
 {
 	char buffer[MAX_PACKET_SIZE];
-	int socket_fd = (int) user_data;
+	intptr_t socket_fd = (intptr_t) user_data;
 
-	fprintf(stdout, "<SPP>: Keyboard reviced fd: %d\n", socket_fd);
+	fprintf(stdout, "<SPP>: Keyboard reviced fd: %zd\n", socket_fd);
 	if (fgets(buffer, MAX_PACKET_SIZE, stdin) == NULL)
 		return 1;
 	fprintf(stdout, "<SPP>: Input: %s\n", buffer);
@@ -50,7 +66,7 @@ static void new_connection_handler(char *device_path, int fd, int version,
 	loop_main->add_fd_watch(STDIN_FILENO,
 			(WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP
 			| WATCH_IO_NVAL),
-			on_keyboard_received, (void *)fd, NULL);
+			on_keyboard_received, (void *)(intptr_t)fd, NULL);
 	fprintf(stdout, "<SPP>: Key board start success\n");
 }
 
@@ -59,10 +75,12 @@ static void request_disconnect_handler(char *device_path, void *user_data)
 	fprintf(stdout, "<SPP>: Request_disconnect_handler called\n");
 }
 
-void uninit(int signal)
+static int uninit(void *user_data)
 {
 	fprintf(stdout, "<SPP>: Process cancel\n");
 	loop_main->quit();
+
+	return true;
 }
 
 static void print_devices(artik_bt_device *devices, int num)
@@ -71,11 +89,9 @@ static void print_devices(artik_bt_device *devices, int num)
 
 	for (i = 0; i < num; i++) {
 		fprintf(stdout, "Address: %s\n",
-			devices[i].remote_address ? devices[i].
-			remote_address : "(null)");
+			devices[i].remote_address ? devices[i].remote_address : "(null)");
 		fprintf(stdout, "Name: %s\n",
-			devices[i].remote_name ? devices[i].
-			remote_name : "(null)");
+			devices[i].remote_name ? devices[i].remote_name : "(null)");
 		fprintf(stdout, "RSSI: %d\n", devices[i].rssi);
 		fprintf(stdout, "Bonded: %s\n",
 			devices[i].is_bonded ? "true" : "false");
@@ -130,7 +146,7 @@ static void on_connect(void *data, void *user_data)
 {
 	bool connected = *(bool *)data;
 
-	fprintf(stdout, "<SPP>: on_connect %s\n",
+	fprintf(stdout, "<SPP>: %s %s\n", __func__,
 		connected ? "Connected" : "Disconnected");
 }
 
@@ -206,11 +222,11 @@ artik_error get_addr(char *remote_addr)
 	fprintf(stdout, "\n<SPP>: Input SPP Server MAC address:\n");
 
 	if (fgets(remote_addr, MAX_BDADDR_LEN + 1, stdin) == NULL) {
-		fprintf(stdout, "<SPP>: get_addr failed! fgets error\n");
+		fprintf(stdout, "<SPP>: %s failed! fgets error\n", __func__);
 		return E_BT_ERROR;
 	}
 	if (fgets(mac_other, 2, stdin) == NULL) {
-		fprintf(stdout, "<SPP>: get_addr failed! fgets error\n");
+		fprintf(stdout, "<SPP>: %s failed! fgets error\n", __func__);
 		return E_BT_ERROR;
 	}
 
@@ -282,7 +298,7 @@ static void ask(char *prompt)
 {
 	printf("%s\n", prompt);
 	if (fgets(buffer, BUFFER_SIZE, stdin) == NULL)
-		fprintf(stdout, "<SPP>: ask failed! fgets error\n");
+		fprintf(stdout, "<SPP>: %s failed! fgets error\n", __func__);
 }
 
 static void m_request_pincode(
@@ -303,25 +319,24 @@ static void m_request_passkey(
 			artik_bt_agent_request_handle handle,
 			char *device, void *user_data)
 {
-	unsigned long passkey;
+	unsigned int passkey;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 					artik_request_api_module("bluetooth");
 
 	printf("Request passkey (%s)\n", device);
 	ask("Enter passkey (1~999999): ");
-	sscanf(buffer, "%lu", &passkey);
-
-	bt->agent_send_passkey(handle, passkey);
+	if (sscanf(buffer, "%u", &passkey) == 1)
+		bt->agent_send_passkey(handle, passkey);
 
 	artik_release_api_module(bt);
 }
 
 static void m_request_confirmation(
 				artik_bt_agent_request_handle handle,
-				char *device, unsigned long passkey,
+				char *device, unsigned int passkey,
 				void *user_data)
 {
-	printf("Request confirmation (%s)\nPasskey: %06lu\n", device, passkey);
+	printf("Request confirmation (%s)\nPasskey: %06u\n", device, passkey);
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 					artik_request_api_module("bluetooth");
 
@@ -391,9 +406,6 @@ static artik_error agent_register(void)
 	bt->set_discoverable(true);
 
 	printf("Invoke register...\n");
-	/*
-	bt->agent_set_callback(m_callback);
-	*/
 	bt->agent_register_capability(g_capa);
 	bt->agent_set_default();
 
@@ -407,7 +419,6 @@ static artik_error agent_register(void)
 int main(void)
 {
 	artik_error ret = S_OK;
-	signal_fuc signal_uninit = uninit;
 	char remote_address[MAX_BDADDR_LEN] = "";
 
 	if (!artik_is_module_available(ARTIK_MODULE_BLUETOOTH)) {
@@ -456,7 +467,7 @@ int main(void)
 	}
 	fprintf(stdout, "<SPP>: SPP start bond!\n");
 	bt_main->start_bond(remote_address);
-	signal(SIGINT, signal_uninit);
+	loop_main->add_signal_watch(SIGINT, uninit, NULL, NULL);
 	loop_main->run();
 
 spp_quit:

@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,25 +29,25 @@
 #include <artik_module.h>
 #include <artik_platform.h>
 
-#define STR_ON_OFF_SWITCH			"ON_OFF_SWITCH"
-#define STR_ON_OFF_LIGHT			"ON_OFF_LIGHT"
-#define STR_DIMMABLE_LIGHT			"DIMMABLE_LIGHT"
+#define STR_ON_OFF_SWITCH		"ON_OFF_SWITCH"
+#define STR_ON_OFF_LIGHT		"ON_OFF_LIGHT"
+#define STR_DIMMABLE_LIGHT		"DIMMABLE_LIGHT"
 #define STR_LEVEL_CONTROL_SWITCH	"LEVEL_CONTROL_SWITCH"
 #define STR_COLOR_DIMMABLE_LIGHT	"COLOR_DIMMABLE_LIGHT"
 #define STR_ON_OFF_LIGHT_SWITCH		"ON_OFF_LIGHT_SWITCH"
-#define STR_DIMMER_SWITCH			"DIMMER_SWITCH"
+#define STR_DIMMER_SWITCH		"DIMMER_SWITCH"
 #define STR_COLOR_DIMMER_SWITCH		"COLOR_DIMMER_SWITCH"
-#define STR_LIGHT_SENSOR			"LIGHT_SENSOR"
+#define STR_LIGHT_SENSOR		"LIGHT_SENSOR"
 #define STR_OCCUPANCY_SENSOR		"OCCUPANCY_SENSOR"
 #define STR_HEATING_COOLING_UNIT	"HEATING_COOLING_UNIT"
-#define STR_THERMOSTAT				"THERMOSTAT"
+#define STR_THERMOSTAT			"THERMOSTAT"
 #define STR_TEMPERATURE_SENSOR		"TEMPERATURE_SENSOR"
-#define STR_REMOTE_CONTROL			"REMOTE_CONTROL"
+#define STR_REMOTE_CONTROL		"REMOTE_CONTROL"
 
-#define KEYBOARD_INPUT_SIZE			100
+#define KEYBOARD_INPUT_SIZE		100
 
 void _callback(void *user_data, artik_zigbee_response_type response_type,
-			   void *payload)
+		void *payload)
 {
 	artik_zigbee_notification notification;
 	artik_zigbee_network_notification network_notification;
@@ -51,7 +69,8 @@ void _callback(void *user_data, artik_zigbee_response_type response_type,
 		case ARTIK_ZIGBEE_CMD_ERR_STRING_TOO_LONG:
 		case ARTIK_ZIGBEE_CMD_ERR_INVALID_ARGUMENT_TYPE:
 		case ARTIK_ZIGBEE_CMD_ERR:
-			log_err("In callback, COMMAND ERROR(%d)!", notification);
+			log_err("In callback, COMMAND ERROR(%d)!",
+								notification);
 			break;
 		default:
 			log_dbg("In callback, response %d", notification);
@@ -59,7 +78,8 @@ void _callback(void *user_data, artik_zigbee_response_type response_type,
 		}
 		break;
 	case ARTIK_ZIGBEE_RESPONSE_NETWORK_NOTIFICATION:
-		network_notification = *((artik_zigbee_network_notification *) payload);
+		network_notification = *((artik_zigbee_network_notification *)
+								payload);
 		switch (network_notification) {
 		case ARTIK_ZIGBEE_NETWORK_JOIN:
 			log_info("In callback, ARTIK_ZIGBEE_NETWORK_JOIN");
@@ -68,13 +88,16 @@ void _callback(void *user_data, artik_zigbee_response_type response_type,
 			log_info("In callback, ARTIK_ZIGBEE_NETWORK_LEAVE");
 			break;
 		case ARTIK_ZIGBEE_NETWORK_FIND_JOIN_SUCCESS:
-			log_info("In callback, ARTIK_ZIGBEE_NETWORK_FIND_JOIN_SUCCESS");
+			log_info("In callback, ARTIK_ZIGBEE_NETWORK_"\
+				"FIND_JOIN_SUCCESS");
 			break;
 		case ARTIK_ZIGBEE_NETWORK_FIND_JOIN_FAILED:
-			log_warn("In callback, ARTIK_ZIGBEE_NETWORK_FIND_JOIN_FAILED");
+			log_warn("In callback, ARTIK_ZIGBEE_NETWORK_"\
+				"FIND_JOIN_FAILED");
 			break;
 		default:
-			log_dbg("In callback, response %d", network_notification);
+			log_dbg("In callback, response %d",
+							network_notification);
 			break;
 		}
 		break;
@@ -87,11 +110,12 @@ void _callback(void *user_data, artik_zigbee_response_type response_type,
 static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 {
 	char command[KEYBOARD_INPUT_SIZE];
-	artik_zigbee_module *zb = (artik_zigbee_module *)artik_request_api_module("zigbee");
+	artik_zigbee_module *zb = (artik_zigbee_module *)
+					artik_request_api_module("zigbee");
 
 	assert(fd == STDIN_FILENO);
 	assert(io == WATCH_IO_IN || io == WATCH_IO_ERR || io == WATCH_IO_HUP
-														|| io == WATCH_IO_NVAL);
+						|| io == WATCH_IO_NVAL);
 	assert(user_data == NULL);
 
 	if (fgets(command, KEYBOARD_INPUT_SIZE, stdin) == NULL)
@@ -104,10 +128,10 @@ static int _on_keyboard_received(int fd, enum watch_io io, void *user_data)
 }
 
 static artik_error _get_device_info(artik_zigbee_module *zb,
-									const char *str_device_id,
-									ARTIK_ZIGBEE_PROFILE *profile,
-									int *endpoint_id,
-									ARTIK_ZIGBEE_DEVICEID *device_id)
+				const char *str_device_id,
+				ARTIK_ZIGBEE_PROFILE *profile,
+				int *endpoint_id,
+				ARTIK_ZIGBEE_DEVICEID *device_id)
 {
 	if (NULL == profile || NULL == endpoint_id || NULL == device_id)
 		return E_INVALID_VALUE;
@@ -230,7 +254,8 @@ int main(int argc, char *argv[])
 	artik_zigbee_module *zb = NULL;
 
 	if (!artik_is_module_available(ARTIK_MODULE_ZIGBEE)) {
-		fprintf(stdout, "TEST: Zigbee module is not available, skipping test...\n");
+		fprintf(stdout, "TEST: Zigbee module is not available,"\
+			" skipping test...\n");
 		return -1;
 	}
 
@@ -247,12 +272,16 @@ int main(int argc, char *argv[])
 		if (argc > ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE + 1)
 			log_warn("only %d device type is supported currently!",
 					ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE);
-		for (i = 1; i < argc && i < ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE + 1; i++) {
+		for (i = 1; i < argc && i < ARTIK_ZIGBEE_MAX_ENDPOINT_SIZE + 1;
+									i++) {
 			log_info("Device type is %s", argv[i]);
 			ret = _get_device_info(zb, argv[i],
-					&endpoint_info.endpoints[endpoint_info.count].profile,
-					&endpoint_info.endpoints[endpoint_info.count].endpoint_id,
-					&endpoint_info.endpoints[endpoint_info.count].device_id);
+					&endpoint_info.endpoints[
+					endpoint_info.count].profile,
+					&endpoint_info.endpoints[
+					endpoint_info.count].endpoint_id,
+					&endpoint_info.endpoints[
+					endpoint_info.count].device_id);
 			if (ret != S_OK)
 				log_warn("not supported device type!!");
 			else
@@ -280,17 +309,20 @@ int main(int argc, char *argv[])
 		if (ret == S_OK)
 			_print_network_status(state);
 		else
-			log_err("get network status failed: %s", error_msg(ret));
+			log_err("get network status failed: %s",
+								error_msg(ret));
 		ret = zb->device_request_my_node_type(&type);
 		if (ret == S_OK)
 			_print_node_type(type);
 		else
-			log_err("get device ndoe type failed: %s", error_msg(ret));
+			log_err("get device ndoe type failed: %s",
+								error_msg(ret));
 	} else
 		log_dbg("Privious Network : Non Exist");
 
-	loop->add_fd_watch(STDIN_FILENO, (WATCH_IO_IN | WATCH_IO_ERR | WATCH_IO_HUP | WATCH_IO_NVAL),
-					   _on_keyboard_received, NULL, NULL);
+	loop->add_fd_watch(STDIN_FILENO, (WATCH_IO_IN | WATCH_IO_ERR |
+					WATCH_IO_HUP | WATCH_IO_NVAL),
+					_on_keyboard_received, NULL, NULL);
 
 	loop->run();
 

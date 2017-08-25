@@ -1,7 +1,26 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <artik_module.h>
 #include <artik_bluetooth.h>
 #include <artik_loop.h>
 #include <stdio.h>
+#include <signal.h>
 
 #define IMMEDIATE_ALERT_SERVICE "00001802-0000-1000-8000-00805f9b34fb"
 #define BATTER_LEVEL_SERVICE "0000180f-0000-1000-8000-00805f9b34fb"
@@ -56,7 +75,14 @@ static void set_advertisement(artik_bt_advertisement *adv)
 	adv->svc_uuid[1] = BATTER_LEVEL_SERVICE;
 }
 
-int main (void)
+static int on_signal(void *user_data)
+{
+	loop->quit();
+
+	return true;
+}
+
+int main(void)
 {
 	artik_bt_advertisement adv = {0};
 	artik_bt_gatt_service svc = {0};
@@ -79,7 +105,7 @@ int main (void)
 	chr.uuid = BATTERY_LEVEL_CHARACTERISTIC;
 	chr.property = battery_char_props;
 	chr.length = 10;
-	chr.value = (unsigned char*)malloc(sizeof(chr.value) * chr.length);
+	chr.value = (unsigned char *)malloc(chr.length);
 	for (int i = 0; i < chr.length; i++)
 		chr.value[i] = i;
 	bt->gatt_add_characteristic(svc_id, chr, &char_id);
@@ -87,7 +113,7 @@ int main (void)
 	desc.uuid = TEST_DESCRIPTOR;
 	desc.property = test_desc_props;
 	desc.length = sizeof(TEST_DESCRIPTOR_VALUE);
-	desc.value = (unsigned char*)malloc(sizeof(desc.value) * desc.length + 1);
+	desc.value = (unsigned char *)malloc(sizeof(desc.value) * desc.length + 1);
 	strcpy((char *)desc.value, TEST_DESCRIPTOR_VALUE);
 	bt->gatt_add_descriptor(svc_id, char_id, desc, &desc_id);
 	bt->gatt_set_char_on_notify_request(svc_id, char_id, on_gatt_notify, NULL);
@@ -95,6 +121,7 @@ int main (void)
 	bt->gatt_register_service(svc_id);
 	fprintf(stdout, "gatt service registered\n");
 
+	loop->add_signal_watch(SIGINT, on_signal, NULL, NULL);
 	loop->run();
 
 	free(desc.value);

@@ -1,8 +1,29 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <gio/gio.h>
+#pragma GCC diagnostic pop
 #include <stdbool.h>
 #include <errno.h>
 #include <signal.h>
@@ -22,7 +43,7 @@ static artik_bluetooth_module *bt;
 static artik_loop_module *loop;
 static artik_error err;
 
-static char *interface_name_cut (char *buf, char **name)
+static char *interface_name_cut(char *buf, char **name)
 {
 	char *stat;
 
@@ -47,8 +68,7 @@ static int check_interface_from_proc(const char *interface)
 
 	/* Open /proc/net/dev. */
 	fp = fopen(PATH_PROC_NET_DEV, "r");
-	if (!fp)
-	{
+	if (!fp) {
 		printf("open proc file error\n");
 		return -1;
 	}
@@ -65,12 +85,13 @@ static int check_interface_from_proc(const char *interface)
 		return -1;
 	}
 
-    /* Only allocate interface structure.  Other jobs will be done in
-     if_ioctl.c. */
-	while (!fgets(buf, PROC_BUFFER_SIZE, fp))
-	{
+	/*
+	 * Only allocate interface structure.  Other jobs will be done in
+	 * if_ioctl.c.
+	 */
+	while (!fgets(buf, PROC_BUFFER_SIZE, fp)) {
 		interface_name_cut(buf, &name);
-		if(!strcmp(interface,name)) {
+		if (!strcmp(interface, name)) {
 			fclose(fp);
 			return 1;
 		}
@@ -85,45 +106,34 @@ static artik_error test_bluetooth_nap(char *bridge)
 
 	printf("Invoke pan register...\n");
 	ret = bt->pan_register("nap", bridge);
-	if (S_OK != ret) {
+
+	if (ret == S_OK) {
+		bt->set_discoverableTimeout(DISCOVERABLE_TIMEOUT);
+		bt->set_discoverable(true);
+	} else {
 		printf("register pan failed\n");
 		return ret;
 	}
-	/*
-	ret = bt->agent_register(BT_CAPA_DISPLAYYESNO);
-	if (S_OK != ret) {
-		printf("register agent failed\n");
-		return ret;
-	}
-	ret = bt->agent_set_default();
-	if (S_OK != ret) {
-		printf("set agent default failed\n");
-		return ret;
-	}*/
-	if (S_OK == ret) {
-		bt->set_discoverableTimeout(DISCOVERABLE_TIMEOUT);
-		bt->set_discoverable(true);
-	}
+
 	return ret;
 }
 
-static void uninit(int signal)
+static int uninit(void *user_data)
 {
 	err = bt->pan_unregister("nap");
 	if (err != S_OK)
 		printf("Unregister Error:%d!\r\n", err);
 	else
 		printf("Unregister OK!\r\n");
-	/*
-	bt->agent_unregister();
-	*/
+
 	loop->quit();
+
+	return true;
 }
 
 int main(int argc, char *argv[])
 {
 	artik_error ret = S_OK;
-	signal_fuc signal_uninit = uninit;
 	char *bridge = NULL;
 	int status = -1;
 	char buf[CMD_LENGTH];
@@ -248,7 +258,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	printf("<NAP> Rgister return is OK:%d!\r\n", err);
-	signal(SIGINT, signal_uninit);
+	loop->add_signal_watch(SIGINT, uninit, NULL, NULL);
 	sleep(1);
 
 	loop->run();
@@ -272,7 +282,7 @@ out:
 		return -1;
 	}
 	strcpy(buf, "iptables -t nat -D POSTROUTING -s 10.0.0.1/255.255.255.0 "
-        "-j MASQUERADE");
+		"-j MASQUERADE");
 	if (system(buf) < 0) {
 		printf("cmd system error\n");
 		return -1;

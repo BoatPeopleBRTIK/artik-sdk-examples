@@ -1,8 +1,29 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <gio/gio.h>
+#pragma GCC diagnostic pop
 #include <stdbool.h>
 
 #include <artik_module.h>
@@ -11,7 +32,6 @@
 
 #define BUFFER_SIZE 17
 
-typedef void (*signal_fuc)(int);
 static char buffer[BUFFER_SIZE];
 static artik_bt_agent_capability g_capa = BT_CAPA_KEYBOARDDISPLAY;
 static void ask(char *prompt)
@@ -34,21 +54,21 @@ static void m_request_pincode(artik_bt_agent_request_handle handle, char *device
 
 static void m_request_passkey(artik_bt_agent_request_handle handle, char *device, void *user_data)
 {
-	unsigned long passkey;
+	unsigned int passkey;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *) artik_request_api_module("bluetooth");
 
 	printf("Request passkey (%s)\n", device);
 	ask("Enter passkey (1~999999): ");
-	sscanf(buffer, "%lu", &passkey);
-
-	bt->agent_send_passkey(handle, passkey);
+	if (sscanf(buffer, "%u", &passkey) == 1)
+		bt->agent_send_passkey(handle, passkey);
 
 	artik_release_api_module(bt);
 }
 
-static void m_request_confirmation(artik_bt_agent_request_handle handle, char *device, unsigned long passkey, void *user_data)
+static void m_request_confirmation(artik_bt_agent_request_handle handle, char *device, unsigned int passkey,
+		void *user_data)
 {
-	printf("Request confirmation (%s)\nPasskey: %06lu\n", device, passkey);
+	printf("Request confirmation (%s)\nPasskey: %06u\n", device, passkey);
 	artik_bluetooth_module *bt = (artik_bluetooth_module *) artik_request_api_module("bluetooth");
 
 	ask("Confirm passkey? (yes/no): ");
@@ -88,6 +108,21 @@ static void m_authorize_service(artik_bt_agent_request_handle handle, char *devi
 	artik_release_api_module(bt);
 }
 
+static int uninit(void *user_data)
+{
+	artik_bluetooth_module *bt = (artik_bluetooth_module *)
+				artik_request_api_module("bluetooth");
+	artik_loop_module *loop = (artik_loop_module *)
+			artik_request_api_module("loop");
+	printf("Get module bluetooth success !\n");
+
+	printf("Invoke unregister...\n");
+	bt->agent_unregister();
+	loop->quit();
+
+	return true;
+}
+
 static artik_error test_bluetooth_agent(void)
 {
 	artik_error ret = S_OK;
@@ -111,6 +146,7 @@ static artik_error test_bluetooth_agent(void)
 	bt->agent_set_callback(m_callback);
 	bt->agent_register_capability(g_capa);
 	bt->agent_set_default();
+	loop->add_signal_watch(SIGINT, uninit, NULL, NULL);
 	loop->run();
 
 	artik_release_api_module(loop);
@@ -119,26 +155,9 @@ static artik_error test_bluetooth_agent(void)
 	return ret;
 }
 
-void uninit(int signal)
-{
-	artik_bluetooth_module *bt = (artik_bluetooth_module *)
-			artik_request_api_module("bluetooth");
-	artik_loop_module *loop = (artik_loop_module *)
-			artik_request_api_module("loop");
-	printf("Get module bluetooth success !\n");
-
-	printf("Invoke unregister...\n");
-	bt->agent_unregister();
-	loop->quit();
-
-	artik_release_api_module(loop);
-	artik_release_api_module(bt);
-}
-
 int main(int argc, char *argv[])
 {
 	artik_error ret = S_OK;
-	signal_fuc signal_uninit = uninit;
 	int temp_capa = 0;
 
 	if (argv[1] != NULL) {
@@ -157,8 +176,6 @@ int main(int argc, char *argv[])
 		printf("TEST:Loop module is not available, skipping test...\n");
 		return -1;
 	}
-
-	signal(SIGINT, signal_uninit);
 
 	ret = test_bluetooth_agent();
 

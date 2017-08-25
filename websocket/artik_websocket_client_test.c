@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,80 +26,94 @@
 #include <artik_loop.h>
 #include <artik_websocket.h>
 
-#define CHECK_RET(x) { if (x != S_OK) goto exit; }
-
 static char *test_message = NULL;
-static void connection_callback(void *user_data, void* result){
 
-	int connected = (int)result;
+static void connection_callback(void *user_data, void *result)
+{
+
+	intptr_t connected = (intptr_t)result;
 
 	if (connected == ARTIK_WEBSOCKET_CONNECTED) {
 		fprintf(stdout, "Websocket connected\n");
 
-		artik_websocket_module *websocket = (artik_websocket_module *)artik_request_api_module("websocket");
+		artik_websocket_module *websocket = (artik_websocket_module *)
+					artik_request_api_module("websocket");
 
 		fprintf(stdout, "Writing: %s\n", test_message);
 
-		websocket->websocket_write_stream((artik_websocket_handle)user_data, test_message);
+		websocket->websocket_write_stream((artik_websocket_handle)
+						user_data, test_message);
 		artik_release_api_module(websocket);
 	} else if (connected == ARTIK_WEBSOCKET_CLOSED) {
 		fprintf(stdout, "Websocket closed\n");
 
-		artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+		artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 		loop->quit();
 		artik_release_api_module(loop);
-	}
-	else{
+	} else {
 		fprintf(stderr, "TEST failed, handshake error\n");
 
-		artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+		artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 		loop->quit();
 		artik_release_api_module(loop);
 	}
 }
 
-static void receive_callback(void *user_data, void* result){
+static void receive_callback(void *user_data, void *result)
+{
 
 	char *buffer = (char *)result;
 
-	if (buffer == NULL){
-		fprintf(stdout,"Received failed\n");
-		return; 
+	if (buffer == NULL) {
+		fprintf(stdout, "Received failed\n");
+		return;
 	}
 
-	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+	artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 
-	printf("Received: %s\n", (char*)result);	
+	printf("Received: %s\n", (char *)result);
 	free(result);
 
 	loop->quit();
 	artik_release_api_module(loop);
 }
 
-static artik_error test_websocket_write(char *root_ca, char *client_cert, char *client_key,
-		char *host, int port, bool use_tls, bool verify){
+static artik_error test_websocket_write(char *root_ca, char *client_cert,
+		char *client_key, char *host, int port, bool use_tls,
+		bool verify)
+{
 
 	artik_error ret = S_OK;
-	artik_websocket_module *websocket = (artik_websocket_module *)artik_request_api_module("websocket");
-	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+	artik_websocket_module *websocket = (artik_websocket_module *)
+					artik_request_api_module("websocket");
+	artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 	artik_websocket_handle handle;
 	artik_websocket_config *config = NULL;
 
 	char *protocol = use_tls ? "wss" : "ws";
 	char _port[6];
 
-	if (!host){
+	if (!host) {
 		printf("Error: You must define the hostname or ip address.\n");
-		printf("Usage: websocket-client-test [-r <file of Root CA certificate>] ");
-		printf("[-c <file of client certificate>] [-k <file of client key>] ");
-		printf("[-i <ip address of the server>] [-p <port of the server>] ");
-		printf("[-t for using TLS] [-m <message>] [-v for verifying CA certificate]\r\n");
+		printf("Usage: websocket-client-test [-r <file of Root CA\n"
+			"certificate>] ");
+		printf("[-c <file of client certificate>]\n"
+			"[-k <file of client key>] ");
+		printf("[-i <ip address of the server>]\n"
+			"[-p <port of the server>] ");
+		printf("[-t for using TLS] [-m <message>]\n"
+			"[-v for verifying CA certificate]\r\n");
 
 		ret = E_BAD_ARGS;
 		return ret;
 	}
 
-	config = (artik_websocket_config*)malloc(sizeof(artik_websocket_config));
+	config = (artik_websocket_config *)malloc(sizeof(
+						artik_websocket_config));
 
 	memset(config, 0, sizeof(artik_websocket_config));
 
@@ -93,17 +125,17 @@ static artik_error test_websocket_write(char *root_ca, char *client_cert, char *
 
 	snprintf(config->uri, len, "%s://%s:%s/", protocol, host, _port);
 
-	if (root_ca){
+	if (root_ca) {
 		config->ssl_config.ca_cert.data = strdup(root_ca);
 		config->ssl_config.ca_cert.len = strlen(root_ca);
 	}
 
-	if (client_cert){
+	if (client_cert) {
 		config->ssl_config.client_cert.data = strdup(client_cert);
 		config->ssl_config.client_cert.len = strlen(client_cert);
 	}
 
-	if (client_key){
+	if (client_key) {
 		config->ssl_config.client_key.data = strdup(client_key);
 		config->ssl_config.client_key.len = strlen(client_key);
 	}
@@ -121,7 +153,7 @@ static artik_error test_websocket_write(char *root_ca, char *client_cert, char *
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
 		goto exit;
 	}
-	
+
 	ret = websocket->websocket_open_stream(handle);
 
 	if (ret != S_OK) {
@@ -129,14 +161,16 @@ static artik_error test_websocket_write(char *root_ca, char *client_cert, char *
 		goto exit;
 	}
 
-	ret = websocket->websocket_set_connection_callback(handle, connection_callback, (void*)handle);
+	ret = websocket->websocket_set_connection_callback(handle,
+		connection_callback, (void *)handle);
 
 	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
 		goto exit;
 	}
 
-	ret = websocket->websocket_set_receive_callback(handle, receive_callback, (void*)handle);
+	ret = websocket->websocket_set_receive_callback(handle,
+		receive_callback, (void *)handle);
 
 	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
@@ -156,7 +190,8 @@ exit:
 	return ret;
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
 
 	int opt;
 	bool verify = false;
@@ -167,15 +202,15 @@ int main(int argc, char *argv[]){
 	char *client_cert = NULL; // Client certificate
 	char *client_key = NULL; // Client key
 	char *host = NULL; // IP Address of server
-	int port = 0; 
+	int port = 0;
 	long fsize;
 	FILE *f;
 
-	while ((opt = getopt(argc, argv, "r:c:k:i:p:m:vt")) != -1){
-		switch(opt){
+	while ((opt = getopt(argc, argv, "r:c:k:i:p:m:vt")) != -1) {
+		switch (opt) {
 		case 'r':
 			f = fopen(optarg, "rb");
-			if (!f){
+			if (!f) {
 				printf("File not found for parameter -r\n");
 				return -1;
 			}
@@ -188,7 +223,7 @@ int main(int argc, char *argv[]){
 			break;
 		case 'c':
 			f = fopen(optarg, "rb");
-			if (!f){
+			if (!f) {
 				printf("File not found for parameter -c\n");
 				return -1;
 			}
@@ -201,7 +236,7 @@ int main(int argc, char *argv[]){
 			break;
 		case 'k':
 			f = fopen(optarg, "rb");
-			if (!f){
+			if (!f) {
 				printf("File not found for parameter -k\n");
 				return -1;
 			}
@@ -229,10 +264,14 @@ int main(int argc, char *argv[]){
 			use_tls = true;
 			break;
 		default:
-			printf("Usage: websocket-client-test [-r <file of Root CA certificate>] ");
-			printf("[-c <file of client certificate>] [-k <file of client key>] ");
-			printf("[-i <ip address of the server>] [-p <port of the server>] ");
-			printf("[-t for using TLS] [-m <message>] [-v for verifying CA certificate]\r\n");
+			printf("Usage: websocket-client-test\n"
+				"[-r <file of Root CA certificate>] ");
+			printf("[-c <file of client certificate>]\n"
+				"[-k <file of client key>] ");
+			printf("[-i <ip address of the server>]\n"
+				"[-p <port of the server>] ");
+			printf("[-t for using TLS] [-m <message>]\n"
+				"[-v for verifying CA certificate]\r\n");
 			return 0;
 		}
 	}
@@ -240,10 +279,9 @@ int main(int argc, char *argv[]){
 	if (!test_message)
 		test_message = strndup("ping", 5);
 
-	ret = test_websocket_write(root_ca, client_cert, client_key, host, port, use_tls, verify);
-	CHECK_RET(ret);
+	ret = test_websocket_write(root_ca, client_cert, client_key, host,
+				port, use_tls, verify);
 
-exit:
 	if (test_message)
 		free(test_message);
 

@@ -1,11 +1,15 @@
-EXE_NAME := security-test
 
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
 	libartik-sdk-connectivity
 
-OBJS := \
+TEST_EXE_NAME := security-test
+TEST_OBJS := \
 	artik_security_test.o
+
+PKCS7_SIG_VERIF_EXE_NAME := pkcs7-sig-verify
+PKCS7_SIG_VERIF_OBJS := \
+	pkcs7_sig_verify.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
@@ -22,10 +26,13 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(EXE_NAME): $(OBJS)
+$(TEST_EXE_NAME): $(TEST_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
-all: $(EXE_NAME)
+$(PKCS7_SIG_VERIF_EXE_NAME): $(PKCS7_SIG_VERIF_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+all: $(TEST_EXE_NAME) $(PKCS7_SIG_VERIF_EXE_NAME)
 
 clean:
-	rm -f *.o $(EXE_NAME)
+	rm -f *.o $(TEST_EXE_NAME) $(PKCS7_SIG_VERIF_EXE_NAME)

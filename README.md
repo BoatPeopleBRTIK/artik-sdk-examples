@@ -98,6 +98,9 @@ disconnection/reconnection of the network interface to observe proper notificati
 ### [artik_dhcp_client_test.c](network/artik_dhcp_client_test.c)
 This programs starts a DHCP client to retrieve an IP address on the network.
 
+### [artik_dhcp_server_test.c](network/artik_dhcp_server_test.c)
+This programs starts a DHCP server and serves IP addresses to requesting DHCP clients.
+
 ## PWM
 ### [artik_pwm_test.c](pwm/artik_pwm_test.c)
 This program will output a PWM signal on one of the ARTIK board's PWM output for a duration of 3 seconds. If a buzzer is connected
@@ -107,6 +110,9 @@ to this output, a sound should be heard.
 ### [artik_security_test.c](security/artik_security_test.c)
 This programs calls the Secure Element related APIs to display the builtin certificate, its associated serial number, and generate
 true random bytes.
+
+### [pkcs7_sig_verify.c](security/pkcs7_sig_verify.c)
+This programs uses the security API to verify a signed binary against a signature contained in a PKCS7 encoded file.
 
 ## Sensor
 ### [artik_sensor_test.c](sensor/artik_sensor_test.c)
@@ -143,6 +149,9 @@ cloud. The program exits automatically after 10 seconds.
 ## Wi-Fi
 ### [artik_wifi_test.c](wifi/artik_wifi_test.c)
 This program scans the surrounding Wi-Fi access points and tries to connect to a preconfigured hotspot.
+
+### [artik_wifi_ap_test.c](wifi/artik_wifi_ap_test.c)
+This program exposes a Wi-Fi Access Point for other Wi-Fi stations to join.
 
 ## ZigBee
 ### [artik_zigbee_test.c](zigbee/artik_zigbee_test.c)

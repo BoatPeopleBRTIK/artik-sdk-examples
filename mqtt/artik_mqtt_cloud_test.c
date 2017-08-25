@@ -1,10 +1,28 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <artik_module.h>
 #include <artik_platform.h>
 #include <artik_loop.h>
 #include <artik_mqtt.h>
 #include <stdio.h>
 
-#define MAX_MSG_LEN		512
+#define MAX_MSG_LEN	512
 #define MAX_UUID_LEN	128
 
 static artik_mqtt_module *mqtt = NULL;
@@ -44,9 +62,11 @@ static const char *akc_root_ca =
 	"hnacRHr2lVz2XTIIM6RUthg/aFzyQkqFOFSDX9HoLPKsEdao7WNq\r\n"
 	"-----END CERTIFICATE-----\n";
 
-void on_connect_subscribe(artik_mqtt_config *client_config, void *user_data, artik_error result)
+void on_connect_subscribe(artik_mqtt_config *client_config,
+					void *user_data, artik_error result)
 {
-	artik_mqtt_handle *client_data = (artik_mqtt_handle *) client_config->handle;
+	artik_mqtt_handle *client_data = (artik_mqtt_handle *)
+							client_config->handle;
 	artik_mqtt_msg *msg = (artik_mqtt_msg *)user_data;
 	char pub_topic[MAX_UUID_LEN + 128];
 	artik_error ret;
@@ -60,8 +80,10 @@ void on_connect_subscribe(artik_mqtt_config *client_config, void *user_data, art
 			fprintf(stderr, "subscribe err: %s\n", error_msg(ret));
 
 		/* Publish message */
-		snprintf(pub_topic, sizeof(pub_topic), "/v1.1/messages/%s", device_id);
-		ret = mqtt->publish(client_data, 0, false, pub_topic, strlen(pub_msg), pub_msg);
+		snprintf(pub_topic, sizeof(pub_topic), "/v1.1/messages/%s",
+								device_id);
+		ret = mqtt->publish(client_data, 0, false, pub_topic,
+						strlen(pub_msg), pub_msg);
 		if (ret == S_OK)
 			fprintf(stdout, "publish success\n");
 		else
@@ -69,21 +91,25 @@ void on_connect_subscribe(artik_mqtt_config *client_config, void *user_data, art
 	}
 }
 
-void on_message_disconnect(artik_mqtt_config *client_config, void *user_data, artik_mqtt_msg *msg)
+void on_message_disconnect(artik_mqtt_config *client_config, void *user_data,
+							artik_mqtt_msg *msg)
 {
 	artik_mqtt_handle *client_data;
 	artik_mqtt_module *user_mqtt = (artik_mqtt_module *) user_data;
 
 	if (msg && client_config) {
-		fprintf(stdout, "topic %s, content %s\n", msg->topic, (char *)msg->payload);
+		fprintf(stdout, "topic %s, content %s\n", msg->topic,
+							(char *)msg->payload);
 		client_data = (artik_mqtt_handle *) client_config->handle;
 		user_mqtt->disconnect(client_data);
 	}
 }
 
-void on_disconnect(artik_mqtt_config *client_config, void *user_data, artik_error result)
+void on_disconnect(artik_mqtt_config *client_config, void *user_data,
+							artik_error result)
 {
-	artik_mqtt_handle *client_data = (artik_mqtt_handle *) client_config->handle;
+	artik_mqtt_handle *client_data = (artik_mqtt_handle *)
+							client_config->handle;
 	artik_mqtt_module *user_mqtt = (artik_mqtt_module *) user_data;
 
 	if (client_data) {

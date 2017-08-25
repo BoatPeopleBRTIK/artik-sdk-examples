@@ -1,8 +1,29 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <gio/gio.h>
+#pragma GCC diagnostic pop
 #include <stdbool.h>
 #include <errno.h>
 #include <signal.h>
@@ -18,11 +39,9 @@
 
 static char buffer[BUFFER_SIZE];
 
-typedef void (*signal_fuc)(int);
-
 static artik_loop_module *loop_main;
 
-void uninit(int signal)
+static int uninit(void *user_data)
 {
 	artik_error ret;
 
@@ -34,7 +53,8 @@ void uninit(int signal)
 	else
 		fprintf(stdout, "Disconnect OK!\r\n");
 	loop_main->quit();
-	artik_release_api_module(bt);
+
+	return true;
 }
 
 static void print_devices(artik_bt_device *devices, int num)
@@ -45,19 +65,15 @@ static void print_devices(artik_bt_device *devices, int num)
 		char *re_name;
 
 		fprintf(stdout, "[Device]: %s\t",
-			devices[i].remote_address ? devices[i].
-			remote_address : "(null)");
-		re_name = (devices[i].remote_name ? devices[i].
-			remote_name : "(null)");
+			devices[i].remote_address ? devices[i].remote_address : "(null)");
+		re_name = (devices[i].remote_name ? devices[i].remote_name : "(null)");
 		if (strlen(re_name) < 8) {
 			fprintf(stdout, "%s\t\t",
-				devices[i].remote_name ? devices[i].
-				remote_name : "(null)");
+				devices[i].remote_name ? devices[i].remote_name : "(null)");
 			}
 		else{
 			fprintf(stdout, "%s\t",
-				devices[i].remote_name ? devices[i].
-				remote_name : "(null)");
+				devices[i].remote_name ? devices[i].remote_name : "(null)");
 			}
 		fprintf(stdout, "RSSI: %d\t", devices[i].rssi);
 		fprintf(stdout, "Bonded: %s\n",
@@ -119,7 +135,7 @@ static void on_connect(void *data, void *user_data)
 				}
 			}
 		}
-		uninit(SIGINT);
+		uninit(NULL);
 	}
 exit:
 	artik_release_api_module(bt);
@@ -141,7 +157,7 @@ static void on_bond(void *data, void *user_data)
 
 		ret = bt->pan_connect(remote_address, uuid,
 			&network_interface);
-		if ( (ret == S_OK) && network_interface)
+		if ((ret == S_OK) && network_interface)
 			fprintf(stdout, "<PANU>: call pan connect sucess\n");
 		else
 			fprintf(stdout, "<PANU>: call pan connect error\n");
@@ -278,7 +294,7 @@ static void m_request_passkey(
 			artik_bt_agent_request_handle handle,
 			char *device, void *user_data)
 {
-	unsigned long passkey;
+	unsigned int passkey;
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 					artik_request_api_module("bluetooth");
 
@@ -292,10 +308,10 @@ static void m_request_passkey(
 
 static void m_request_confirmation(
 				artik_bt_agent_request_handle handle,
-				char *device, unsigned long passkey,
+				char *device, unsigned int passkey,
 				void *user_data)
 {
-	printf("Request confirmation (%s)\nPasskey: %06lu\n", device, passkey);
+	printf("Request confirmation (%s)\nPasskey: %06u\n", device, passkey);
 	artik_bluetooth_module *bt = (artik_bluetooth_module *)
 					artik_request_api_module("bluetooth");
 
@@ -378,7 +394,6 @@ static artik_error agent_register(void)
 int main(int argc, char *argv[])
 {
 	artik_error ret = S_OK;
-	signal_fuc signal_uninit = uninit;
 	artik_bluetooth_module *bt_main = NULL;
 	char remote_address[MAX_BDADDR_LEN] = "";
 	int status = -1;
@@ -428,7 +443,7 @@ int main(int argc, char *argv[])
 
 	fprintf(stdout, "<PANU>: Start bond!\n");
 	bt_main->start_bond(remote_address);
-	signal(SIGINT, signal_uninit);
+	loop_main->add_signal_watch(SIGINT, uninit, NULL, NULL);
 	loop_main->run();
 
 loop_quit:

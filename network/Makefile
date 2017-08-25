@@ -11,6 +11,10 @@ DHCP_CLIENT_EXE_NAME := dhcp-client
 DHCP_CLIENT_OBJS := \
 	artik_dhcp_client_test.o
 
+DHCP_SERVER_EXE_NAME := dhcp-server
+DHCP_SERVER_OBJS := \
+	artik_dhcp_server_test.o
+
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
 PKG_CONFIG := PKG_CONFIG_PATH=${SYSROOT}/usr/lib/pkgconfig/ PKG_CONFIG_SYSROOT_DIR=${SYSROOT} pkg-config
@@ -32,7 +36,10 @@ $(TEST_EXE_NAME): $(TEST_OBJS)
 $(DHCP_CLIENT_EXE_NAME): $(DHCP_CLIENT_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
-all: $(TEST_EXE_NAME) $(DHCP_CLIENT_EXE_NAME)
+$(DHCP_SERVER_EXE_NAME): $(DHCP_SERVER_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+all: $(TEST_EXE_NAME) $(DHCP_CLIENT_EXE_NAME) $(DHCP_SERVER_EXE_NAME)
 
 clean:
-	rm -f *.o $(TEST_EXE_NAME) $(DHCP_CLIENT_EXE_NAME)
+	rm -f *.o $(TEST_EXE_NAME) $(DHCP_CLIENT_EXE_NAME) $(DHCP_SERVER_EXE_NAME)

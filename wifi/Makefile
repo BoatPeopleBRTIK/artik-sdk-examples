@@ -1,11 +1,15 @@
-EXE_NAME := wifi-test
 
 ARTIK_SDK_LIBS := \
 	libartik-sdk-base \
 	libartik-sdk-wifi
 
-OBJS := \
+TEST_EXE_NAME := wifi-test
+TEST_OBJS := \
 	artik_wifi_test.o
+
+TEST_AP_EXE_NAME := wifi-ap
+TEST_AP_OBJS := \
+	artik_wifi_ap_test.o
 
 CC := ${CROSS_COMPILE}gcc
 ifdef SYSROOT
@@ -22,10 +26,13 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(EXE_NAME): $(OBJS)
+$(TEST_EXE_NAME): $(TEST_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)
 
-all: $(EXE_NAME)
+$(TEST_AP_EXE_NAME): $(TEST_AP_OBJS)
+	${CC} -o $@ $^ $(LDFLAGS)
+
+all: $(TEST_EXE_NAME) $(TEST_AP_EXE_NAME)
 
 clean:
-	rm -f *.o $(EXE_NAME)
+	rm -f *.o $(TEST_EXE_NAME) $(TEST_AP_EXE_NAME)

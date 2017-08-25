@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -5,12 +23,11 @@
 #include <artik_module.h>
 #include <artik_security.h>
 
-#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
-
 static artik_error test_security_get_serial_number(void)
 {
 	artik_error ret = S_OK;
-	artik_security_module *security = (artik_security_module *)artik_request_api_module("security");
+	artik_security_module *security = (artik_security_module *)
+					artik_request_api_module("security");
 	artik_security_handle handle;
 	unsigned char serial_number[ARTIK_CERT_SN_MAXLEN];
 	unsigned int lenSN = ARTIK_CERT_SN_MAXLEN;
@@ -20,12 +37,14 @@ static artik_error test_security_get_serial_number(void)
 
 	ret = security->request(&handle);
 	if (ret != S_OK) {
-		fprintf(stderr, "Failed to request security module (err=%d)\n", ret);
+		fprintf(stderr, "Failed to request security module (err=%d)\n",
+									ret);
 		return ret;
 	}
 	ret = security->get_certificate_sn(handle, serial_number, &lenSN);
 	if (ret != S_OK) {
-		fprintf(stderr, "Failed to get serial number from certificate (err=%d)\n", ret);
+		fprintf(stderr, "Failed to get serial number from certificate"\
+			" (err=%d)\n", ret);
 		goto exit;
 	}
 	fprintf(stdout, "Serial Number :\n");
@@ -40,7 +59,8 @@ exit:
 
 	security->release(handle);
 
-	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
+	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" :
+								"failed");
 
 	artik_release_api_module(security);
 
@@ -50,7 +70,8 @@ exit:
 static artik_error test_security_get_certificate_and_key(void)
 {
 	artik_error ret = S_OK;
-	artik_security_module *security = (artik_security_module *)artik_request_api_module("security");
+	artik_security_module *security = (artik_security_module *)
+					artik_request_api_module("security");
 	artik_security_handle handle;
 	char *cert = NULL;
 	char *key = NULL;
@@ -59,13 +80,15 @@ static artik_error test_security_get_certificate_and_key(void)
 
 	ret = security->request(&handle);
 	if (ret != S_OK) {
-		fprintf(stderr, "Failed to request security module (err=%d)\n", ret);
+		fprintf(stderr, "Failed to request security module (err=%d)\n",
+									ret);
 		return ret;
 	}
 
 	ret = security->get_certificate(handle, &cert);
 	if (ret != S_OK) {
-		fprintf(stderr, "Failed to get certificate (err=%d)\n", ret);
+		fprintf(stderr, "Failed to get certificate (err=%d)\n",
+									ret);
 		goto exit;
 	}
 
@@ -87,7 +110,8 @@ exit:
 		free(cert);
 	if (key)
 		free(key);
-	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
+	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" :
+								"failed");
 
 	artik_release_api_module(security);
 
@@ -97,7 +121,8 @@ exit:
 static artik_error test_security_random_bytes(void)
 {
 	artik_error ret = S_OK;
-	artik_security_module *security = (artik_security_module *)artik_request_api_module("security");
+	artik_security_module *security = (artik_security_module *)
+					artik_request_api_module("security");
 	artik_security_handle handle;
 	unsigned char randbytes[32];
 	int i = 0;
@@ -106,7 +131,8 @@ static artik_error test_security_random_bytes(void)
 
 	ret = security->request(&handle);
 	if (ret != S_OK) {
-		fprintf(stderr, "Failed to request security module (err=%d)\n", ret);
+		fprintf(stderr, "Failed to request security module (err=%d)\n",
+									ret);
 		return ret;
 	}
 
@@ -126,7 +152,8 @@ static artik_error test_security_random_bytes(void)
 exit:
 	security->release(handle);
 
-	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
+	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" :
+								"failed");
 
 	artik_release_api_module(security);
 
@@ -140,14 +167,14 @@ int main(void)
 	fprintf(stdout, "artik_security_test:\n");
 
 	ret = test_security_get_serial_number();
-	CHECK_RET(ret);
+	if (ret != S_OK)
+		goto exit;
 
 	ret = test_security_get_certificate_and_key();
-	CHECK_RET(ret);
+	if (ret != S_OK)
+		goto exit;
 
 	ret = test_security_random_bytes();
-	CHECK_RET(ret);
-
 exit:
 	return (ret == S_OK) ? 0 : 1;
 }

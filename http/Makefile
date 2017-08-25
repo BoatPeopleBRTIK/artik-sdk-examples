@@ -6,6 +6,9 @@ ARTIK_SDK_LIBS := \
 TEST_EXE_NAME := http-test
 TEST_OBJS := \
 	artik_http_test.o
+TEST_LIBS := \
+	-lcrypto \
+	-lssl
 
 OPENSSL_EXE_NAME := http-openssl-test
 OPENSSL_OBJS := \
@@ -27,7 +30,7 @@ LDFLAGS := ${LDFLAGS} $(shell ${PKG_CONFIG} --libs ${ARTIK_SDK_LIBS})
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TEST_EXE_NAME): $(TEST_OBJS)
-	${CC} -o $@ $^ $(LDFLAGS)
+	${CC} -o $@ $^ $(LDFLAGS) $(TEST_LIBS)
 
 $(OPENSSL_EXE_NAME): $(OPENSSL_OBJS)
 	${CC} -o $@ $^ $(LDFLAGS)

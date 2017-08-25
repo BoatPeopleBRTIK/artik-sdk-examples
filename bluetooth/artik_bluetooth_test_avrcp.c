@@ -1,8 +1,29 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <gio/gio.h>
+#pragma GCC diagnostic pop
 #include <stdbool.h>
 #include <errno.h>
 
@@ -23,11 +44,9 @@ void print_devices(artik_bt_device *devices, int num)
 
 	for (i = 0; i < num; i++) {
 		fprintf(stdout, "Address: %s\n",
-			devices[i].remote_address ? devices[i].
-			remote_address : "(null)");
+			devices[i].remote_address ? devices[i].remote_address : "(null)");
 		fprintf(stdout, "Name: %s\n",
-			devices[i].remote_name ? devices[i].
-			remote_name : "(null)");
+			devices[i].remote_name ? devices[i].remote_name : "(null)");
 		fprintf(stdout, "Bonded: %s\n",
 			devices[i].is_bonded ? "true" : "false");
 		fprintf(stdout, "Connected: %s\n",
@@ -382,7 +401,7 @@ int main(void)
 
 	printf("\nPlease input command:\n");
 
-	while (0 == g_quit) {
+	while (!g_quit) {
 		fd_set readfds;
 		int num_bytes;
 		int result;

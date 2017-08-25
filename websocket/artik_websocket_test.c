@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,8 +25,6 @@
 #include <artik_module.h>
 #include <artik_loop.h>
 #include <artik_websocket.h>
-
-#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
 static const char *echo_websocket_root_ca =
 	"-----BEGIN CERTIFICATE-----\n"
@@ -37,61 +53,71 @@ static const char *echo_websocket_root_ca =
 
 static char *test_message = NULL;
 
-static void connection_callback(void *user_data, void* result){
+static void connection_callback(void *user_data, void *result)
+{
 
-	int connected = (int)result;
+	intptr_t connected = (intptr_t)result;
 
 	if (connected == ARTIK_WEBSOCKET_CONNECTED) {
 		fprintf(stdout, "Websocket connected\n");
 
-		artik_websocket_module *websocket = (artik_websocket_module *)artik_request_api_module("websocket");
+		artik_websocket_module *websocket = (artik_websocket_module *)
+					artik_request_api_module("websocket");
 
 		fprintf(stdout, "Writing: %s\n", test_message);
 
-		websocket->websocket_write_stream((artik_websocket_handle)user_data, test_message);
+		websocket->websocket_write_stream((artik_websocket_handle)
+						user_data, test_message);
 		artik_release_api_module(websocket);
 	} else if (connected == ARTIK_WEBSOCKET_CLOSED) {
 		fprintf(stdout, "Websocket closed\n");
 
-		artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+		artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 		loop->quit();
 		artik_release_api_module(loop);
-	}
-	else{
+	} else {
 		fprintf(stderr, "TEST failed, handshake error\n");
 
-		artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+		artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 		loop->quit();
 		artik_release_api_module(loop);
 	}
 }
 
-static void receive_callback(void *user_data, void* result){
+static void receive_callback(void *user_data, void *result)
+{
 
 	char *buffer = (char *)result;
 
-	if (buffer == NULL){
-		fprintf(stdout,"Received failed\n");
-		return; 
+	if (buffer == NULL) {
+		fprintf(stdout, "Received failed\n");
+		return;
 	}
 
-	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+	artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 
-	printf("Received: %s\n", (char*)result);	
+	printf("Received: %s\n", (char *)result);
 	free(result);
 
 	loop->quit();
 	artik_release_api_module(loop);
 }
 
-static artik_error test_websocket_write(char *uri, bool verify){
+static artik_error test_websocket_write(char *uri, bool verify)
+{
 	artik_error ret = S_OK;
-	artik_websocket_module *websocket = (artik_websocket_module *)artik_request_api_module("websocket");
-	artik_loop_module *loop = (artik_loop_module *)artik_request_api_module("loop");
+	artik_websocket_module *websocket = (artik_websocket_module *)
+					artik_request_api_module("websocket");
+	artik_loop_module *loop = (artik_loop_module *)
+					artik_request_api_module("loop");
 	artik_websocket_handle handle;
 	artik_websocket_config *config = NULL;
 
-	config = (artik_websocket_config*)malloc(sizeof(artik_websocket_config));
+	config = (artik_websocket_config *)malloc(sizeof(
+						artik_websocket_config));
 
 	memset(config, 0, sizeof(artik_websocket_config));
 
@@ -112,7 +138,7 @@ static artik_error test_websocket_write(char *uri, bool verify){
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
 		goto exit;
 	}
-	
+
 	ret = websocket->websocket_open_stream(handle);
 
 	if (ret != S_OK) {
@@ -120,14 +146,16 @@ static artik_error test_websocket_write(char *uri, bool verify){
 		goto exit;
 	}
 
-	ret = websocket->websocket_set_connection_callback(handle, connection_callback, (void*)handle);
+	ret = websocket->websocket_set_connection_callback(handle,
+					connection_callback, (void *)handle);
 
 	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
 		goto exit;
 	}
 
-	ret = websocket->websocket_set_receive_callback(handle, receive_callback, (void*)handle);
+	ret = websocket->websocket_set_receive_callback(handle,
+					receive_callback, (void *)handle);
 
 	if (ret != S_OK) {
 		fprintf(stdout, "TEST: %s failed (err=%d)\n", __func__, ret);
@@ -147,15 +175,16 @@ exit:
 	return ret;
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
 
 	int opt;
-	bool verify = false; 
+	bool verify = false;
 	artik_error ret = S_OK;
 	char uri[26] = "ws://echo.websocket.org/";
 
-	while ((opt = getopt(argc, argv, "tm:v")) != -1){
-		switch(opt){
+	while ((opt = getopt(argc, argv, "tm:v")) != -1) {
+		switch (opt) {
 		case 't':
 			snprintf(uri, 26, "%s", "wss://echo.websocket.org/");
 			break;
@@ -166,7 +195,8 @@ int main(int argc, char *argv[]){
 			verify = true;
 			break;
 		default:
-			printf("Usage: websocket-test [-t for using TLS] [-m <message>] [-v for verifying CA certificate]\n");
+			printf("Usage: websocket-test [-t for using TLS]\n"
+			"[-m <message>] [-v for verifying CA certificate]\n");
 			return 0;
 		}
 	}
@@ -174,10 +204,8 @@ int main(int argc, char *argv[]){
 	if (!test_message)
 		test_message = strndup("ping", 5);
 
-	ret = test_websocket_write(uri ,verify);
-	CHECK_RET(ret);
+	ret = test_websocket_write(uri, verify);
 
-exit:
 	if (test_message)
 		free(test_message);
 

@@ -1,6 +1,24 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 /* Aritk SPI Physical Loopback Test
-   Connect the wire between MISO and MOSI
-*/
+ * Connect the wire between MISO and MOSI
+ */
 
 #include <stdio.h>
 
@@ -8,7 +26,6 @@
 #include <artik_platform.h>
 #include <artik_spi.h>
 
-#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 static artik_spi_config config = {
@@ -21,7 +38,8 @@ static artik_spi_config config = {
 
 static artik_error spi_test(int platid)
 {
-	artik_spi_module *spi = (artik_spi_module *)artik_request_api_module("spi");
+	artik_spi_module *spi = (artik_spi_module *)
+						artik_request_api_module("spi");
 	artik_spi_handle handle;
 	artik_error ret;
 	unsigned int i = 0;
@@ -72,7 +90,8 @@ static artik_error spi_test(int platid)
 		goto exit;
 	}
 exit:
-	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
+	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" :
+								"failed");
 
 	artik_release_api_module(spi);
 
@@ -85,8 +104,6 @@ int main(void)
 	int platid = artik_get_platform();
 
 	ret = spi_test(platid);
-	CHECK_RET(ret);
 
-exit:
 	return (ret == S_OK) ? 0 : -1;
 }

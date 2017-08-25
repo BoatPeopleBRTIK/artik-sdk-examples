@@ -1,8 +1,29 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <gio/gio.h>
+#pragma GCC diagnostic pop
 #include <stdbool.h>
 #include <errno.h>
 #include <signal.h>
@@ -26,6 +47,7 @@ static int on_socket(int fd, enum watch_io io, void *user_data)
 	if (io & WATCH_IO_IN) {
 		uint8_t buffer[MAX_PACKET_SIZE];
 		int num_bytes = 0;
+
 		num_bytes = recv(fd, buffer, MAX_PACKET_SIZE, 0);
 		if (num_bytes == -1) {
 			printf("Error in recvfrom()\n");
@@ -39,9 +61,9 @@ static int on_socket(int fd, enum watch_io io, void *user_data)
 	return 1;
 }
 
-static void release_handler()
+static void release_handler(void *user_data)
 {
-	printf("release_handler called\n");
+	printf("%s\n", __func__);
 }
 
 static void new_connection_handler(char *device_path, int fd, int version,
@@ -53,12 +75,10 @@ static void new_connection_handler(char *device_path, int fd, int version,
 
 static void request_disconnect_handler(char *device_path, void *user_data)
 {
-	printf("request_disconnect_handler called\n");
+	printf("%s\n", __func__);
 }
 
-typedef void (*signal_fuc)(int);
-
-void uninit(int signal)
+static int uninit(void *user_data)
 {
 	err = bt->spp_unregister_profile();
 	if (err != S_OK)
@@ -66,12 +86,12 @@ void uninit(int signal)
 	else
 		printf("<SPP>:Unregister OK!\r\n");
 	loop->quit();
+
+	return true;
 }
 
 int main(int argc, char *argv[])
 {
-	signal_fuc signal_uninit = uninit;
-
 	profile_option.name = "Artik SPP Loopback";
 	profile_option.service = "spp char loopback";
 	profile_option.role = "server";
@@ -112,8 +132,11 @@ int main(int argc, char *argv[])
 	} else {
 		printf("<SPP> TEST:SPP set callback success!\n");
 	}
-	signal(SIGINT, signal_uninit);
+	loop->add_signal_watch(SIGINT, uninit, NULL, NULL);
 	loop->run();
+
+	artik_release_api_module(loop);
+	artik_release_api_module(bt);
 
 	return S_OK;
 }

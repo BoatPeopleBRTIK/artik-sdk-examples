@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,9 +26,8 @@
 #include <artik_bluetooth.h>
 
 #define MAX_BDADDR_LEN	17
-#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
-static artik_bluetooth_module *bt = NULL;
+static artik_bluetooth_module *bt;
 
 void print_devices(artik_bt_device *devices, int num)
 {
@@ -18,11 +35,9 @@ void print_devices(artik_bt_device *devices, int num)
 
 	for (i = 0; i < num; i++) {
 		fprintf(stdout, "Address: %s\n",
-			devices[i].remote_address ? devices[i].
-			remote_address : "(null)");
+			devices[i].remote_address ? devices[i].remote_address : "(null)");
 		fprintf(stdout, "Name: %s\n",
-			devices[i].remote_name ? devices[i].
-			remote_name : "(null)");
+			devices[i].remote_name ? devices[i].remote_name : "(null)");
 		fprintf(stdout, "RSSI: %d\n", devices[i].rssi);
 		fprintf(stdout, "Bonded: %s\n",
 			devices[i].is_bonded ? "true" : "false");
@@ -157,7 +172,7 @@ static void on_bond(void *data, void *user_data)
 	char *remote_address = (char *)user_data;
 	bool paired = *(bool *)data;
 
-	fprintf(stdout, "on_bond %s\n", paired ? "Paired" : "UnPaired");
+	fprintf(stdout, "%s %s\n", __func__, paired ? "Paired" : "UnPaired");
 	bt->connect(remote_address);
 }
 
@@ -165,7 +180,7 @@ static void on_connect(void *data, void *user_data)
 {
 	bool connected = *(bool *)data;
 
-	fprintf(stdout, "on_connect %s\n",
+	fprintf(stdout, "%s %s\n", __func__,
 		connected ? "Connected" : "Disconnected");
 }
 
@@ -173,7 +188,7 @@ static void on_proximity(void *data, void *user_data)
 {
 	artik_bt_gatt_data *bt_pxp_data = (artik_bt_gatt_data *) data;
 
-	fprintf(stdout, "on_proximity : property [%s] value [%s]\n",
+	fprintf(stdout, "%s : property [%s] value [%s]\n", __func__,
 		bt_pxp_data->key, bt_pxp_data->value);
 }
 
@@ -252,7 +267,7 @@ exit:
 	return ret;
 }
 
-static artik_error test_bluetooth_disconnect_devices()
+static artik_error test_bluetooth_disconnect_devices(void)
 {
 	artik_error ret = S_OK;
 	artik_bt_device *devices = NULL;
@@ -334,22 +349,27 @@ int main(int argc, char *argv[])
 
 
 	ret = test_bluetooth_scan();
-	CHECK_RET(ret);
+	if (ret != S_OK)
+		goto exit;
 
 	/* Only call this test if a target address was provided */
 	if (strncmp(target_address, "", MAX_BDADDR_LEN) != 0) {
 		ret = test_bluetooth_connect(target_address);
-		CHECK_RET(ret);
+		if (ret != S_OK)
+			goto exit;
 	}
 
 	ret = test_bluetooth_devices();
-	CHECK_RET(ret);
+	if (ret != S_OK)
+		goto exit;
 
 	ret = test_bluetooth_disconnect_devices();
-	CHECK_RET(ret);
+	if (ret != S_OK)
+		goto exit;
 
 	ret = test_bluetooth_devices();
-	CHECK_RET(ret);
+	if (ret != S_OK)
+		goto exit;
 
 exit:
 	artik_release_api_module(bt);

@@ -1,11 +1,27 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 
 #include <stdio.h>
 
 #include <artik_module.h>
 #include <artik_platform.h>
 #include <artik_i2c.h>
-
-#define CHECK_RET(x)	{ if (x != S_OK) goto exit; }
 
 /*
  * This test only works if the CW2015 Linux driver is unbound first:
@@ -31,7 +47,8 @@ static artik_i2c_config config = {
 
 static artik_error i2c_test_cw2015(int platid)
 {
-	artik_i2c_module *i2c = (artik_i2c_module *)artik_request_api_module("i2c");
+	artik_i2c_module *i2c = (artik_i2c_module *)
+						artik_request_api_module("i2c");
 	artik_i2c_handle cw2015;
 	char version, conf;
 	artik_error ret;
@@ -54,14 +71,16 @@ static artik_error i2c_test_cw2015(int platid)
 	ret = i2c->read_register(cw2015, CW201x_REG_VERSION, &version, 1);
 	if (ret != S_OK) {
 		fprintf(stderr,
-			"FAILED\nFailed to read I2C %d@0x%02x register 0x%04x (%d)\n",
+			"FAILED\nFailed to read I2C %d@0x%02x\n"
+			"register 0x%04x (%d)\n",
 			config.id, config.address, CW201x_REG_VERSION, ret);
 		goto exit;
 	}
 	fprintf(stdout, "OK - val=0x%02x\n", version);
 	if (version != 0x6f) {
 		fprintf(stderr,
-			"%s: Wrong chip version read, expected 0x6f, got 0x%02x\n",
+			"%s: Wrong chip version read,\n"
+			"expected 0x6f, got 0x%02x\n",
 			__func__, version);
 		ret = E_BAD_ARGS;
 	} else
@@ -70,7 +89,8 @@ static artik_error i2c_test_cw2015(int platid)
 	ret = i2c->read_register(cw2015, CW201x_REG_CONFIG, &conf, 1);
 	if (ret != S_OK) {
 		fprintf(stderr,
-			"FAILED\nFailed to read I2C %d@0x%02x register 0x%04x (%d)\n",
+			"FAILED\nFailed to read I2C %d@0x%02x\n"
+			"register 0x%04x (%d)\n",
 			config.id, config.address, CW201x_REG_CONFIG, ret);
 		goto exit;
 	}
@@ -80,7 +100,8 @@ static artik_error i2c_test_cw2015(int platid)
 	ret = i2c->write_register(cw2015, CW201x_REG_CONFIG, &conf, 1);
 	if (ret != S_OK) {
 		fprintf(stderr,
-			"FAILED\nFailed to write I2C %d@0x%02x register 0x%04x (%d)\n",
+			"FAILED\nFailed to write I2C %d@0x%02x\n"
+			"register 0x%04x (%d)\n",
 			config.id, config.address, CW201x_REG_CONFIG, ret);
 		goto exit;
 	}
@@ -89,7 +110,8 @@ static artik_error i2c_test_cw2015(int platid)
 	ret = i2c->read_register(cw2015, CW201x_REG_CONFIG, &conf, 1);
 	if (ret != S_OK) {
 		fprintf(stderr,
-			"FAILED\nFailed to read I2C %d@0x%02x register 0x%04x (%d)\n",
+			"FAILED\nFailed to read I2C %d@0x%02x\n"
+			"register 0x%04x (%d)\n",
 			config.id, config.address, CW201x_REG_CONFIG, ret);
 		goto exit;
 	}
@@ -101,7 +123,8 @@ static artik_error i2c_test_cw2015(int platid)
 		goto exit;
 	}
 exit:
-	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" : "failed");
+	fprintf(stdout, "TEST: %s %s\n", __func__, (ret == S_OK) ? "succeeded" :
+								"failed");
 
 	artik_release_api_module(i2c);
 
@@ -126,11 +149,10 @@ int main(void)
 	/* Unbound the driver */
 	system(cmd);
 
-	if ((platid == ARTIK520) || (platid == ARTIK1020) || (platid == ARTIK710) || (platid == ARTIK530)) {
+	if ((platid == ARTIK520) || (platid == ARTIK1020) ||
+			(platid == ARTIK710) || (platid == ARTIK530)) {
 		ret = i2c_test_cw2015(platid);
-		CHECK_RET(ret);
 	}
 
-exit:
 	return (ret == S_OK) ? 0 : -1;
 }

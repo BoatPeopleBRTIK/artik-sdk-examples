@@ -1,3 +1,21 @@
+/*
+ *
+ * Copyright 2017 Samsung Electronics All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
 /*! \file artik_sensor_test.c
  *
  *  \brief Sensor Test example in C
@@ -25,12 +43,18 @@ static void signal_handler(int signum)
 
 int main(void)
 {
-	artik_sensor_module *sensor              = (artik_sensor_module *)artik_request_api_module("sensor");
-	artik_sensor_config *config_acce         = sensor->get_accelerometer_sensor(0);
-	artik_sensor_config *config_humid        = sensor->get_humidity_sensor(0);
-	artik_sensor_config *config_photolight   = sensor->get_light_sensor(0);
-	artik_sensor_config *config_envtemp      = sensor->get_temperature_sensor(0);
-	artik_sensor_config *config_pressure     = sensor->get_pressure_sensor(0);
+	artik_sensor_module *sensor              =
+		(artik_sensor_module *)artik_request_api_module("sensor");
+	artik_sensor_config *config_acce         =
+		sensor->get_accelerometer_sensor(0);
+	artik_sensor_config *config_humid        =
+		sensor->get_humidity_sensor(0);
+	artik_sensor_config *config_photolight   =
+		sensor->get_light_sensor(0);
+	artik_sensor_config *config_envtemp      =
+		sensor->get_temperature_sensor(0);
+	artik_sensor_config *config_pressure     =
+		sensor->get_pressure_sensor(0);
 	artik_sensor_config *config_gyro         = sensor->get_gyro_sensor(0);
 	artik_sensor_config *config_hall         = sensor->get_hall_sensor(0);
 	artik_sensor_handle handle_acce          = NULL;
@@ -58,15 +82,25 @@ int main(void)
 		printf("CONF[%s] (%d)\n", all_conf[i].name, all_conf[i].type);
 		i++;
 	}
-	printf("ret : %s\n", error_msg(sensor->request(config_acce, &handle_acce, (artik_sensor_ops *) &sensor_acce)));
-	printf("ret : %s\n", error_msg(sensor->request(config_humid, &handle_humid, (artik_sensor_ops *) &sensor_humid)));
-	printf("ret : %s\n", error_msg(sensor->request(config_photolight, &handle_photolight, (artik_sensor_ops *) &sensor_photolight)));
-	printf("ret : %s\n", error_msg(sensor->request(config_envtemp, &handle_envtemp, (artik_sensor_ops *) &sensor_envtemp)));
-	printf("ret : %s\n", error_msg(sensor->request(config_pressure, &handle_pressure, (artik_sensor_ops *) &sensor_pressure)));
-	printf("ret : %s\n", error_msg(sensor->request(config_gyro, &handle_gyro, (artik_sensor_ops *) &sensor_gyro)));
-	printf("ret : %s\n", error_msg(sensor->request(config_hall, &handle_hall, (artik_sensor_ops *) &sensor_hall)));
+	printf("ret : %s\n", error_msg(sensor->request(config_acce,
+			&handle_acce, (artik_sensor_ops *) &sensor_acce)));
+	printf("ret : %s\n", error_msg(sensor->request(config_humid,
+			&handle_humid, (artik_sensor_ops *) &sensor_humid)));
+	printf("ret : %s\n", error_msg(sensor->request(config_photolight,
+			&handle_photolight, (artik_sensor_ops *)
+			&sensor_photolight)));
+	printf("ret : %s\n", error_msg(sensor->request(config_envtemp,
+			&handle_envtemp, (artik_sensor_ops *)
+			&sensor_envtemp)));
+	printf("ret : %s\n", error_msg(sensor->request(config_pressure,
+			&handle_pressure, (artik_sensor_ops *)
+			&sensor_pressure)));
+	printf("ret : %s\n", error_msg(sensor->request(config_gyro,
+			&handle_gyro, (artik_sensor_ops *) &sensor_gyro)));
+	printf("ret : %s\n", error_msg(sensor->request(config_hall,
+			&handle_hall, (artik_sensor_ops *) &sensor_hall)));
 	while (!end && k) {
-		printf("===================================================================\n");
+		printf("===================================================\n");
 
 		if (sensor_envtemp && handle_envtemp) {
 			sensor_envtemp->get_celsius(handle_envtemp, &res);
@@ -98,7 +132,8 @@ int main(void)
 			res = 0;
 		}
 		if (sensor_photolight && handle_photolight) {
-			sensor_photolight->get_intensity(handle_photolight, &res);
+			sensor_photolight->get_intensity(handle_photolight,
+									&res);
 			printf("Light data  intensity: %d%%\n", res);
 			res = 0;
 		}
@@ -117,7 +152,7 @@ int main(void)
 			printf("Hall Sensor Detected : %d\n", res);
 			res = 0;
 		}
-		printf("===================================================================\n");
+		printf("===================================================\n");
 		--k;
 		sleep(2);
 	}
